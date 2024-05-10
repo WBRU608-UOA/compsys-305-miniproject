@@ -24,7 +24,7 @@ architecture behaviour of graphics_controller is
     signal red_enable, green_enable, blue_enable : std_logic;
 
     SIGNAL rom_data		: STD_LOGIC_VECTOR (11 DOWNTO 0);
-	SIGNAL rom_address	: STD_LOGIC_VECTOR (7 DOWNTO 0);
+	SIGNAL rom_address	: STD_LOGIC_VECTOR (15 DOWNTO 0);
 
     signal current_pixel : std_logic_vector(11 downto 0);
 
@@ -54,7 +54,7 @@ architecture behaviour of graphics_controller is
 	);
 	PORT (
 		clock0		: IN STD_LOGIC ;
-		address_a	: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		address_a	: IN STD_LOGIC_VECTOR (15 DOWNTO 0);
 		q_a			: OUT STD_LOGIC_VECTOR (11 DOWNTO 0)
 	);
 	END COMPONENT;
@@ -76,11 +76,11 @@ begin
 		intended_device_family => "Cyclone III",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",
-		numwords_a => 204,
+		numwords_a => 65536,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
 		outdata_reg_a => "UNREGISTERED",
-		widthad_a => 13,
+		widthad_a => 16,
 		width_a => 12,
 		width_byteena_a => 1
 	)
@@ -102,13 +102,19 @@ begin
             if (x >= bird_pos.x and x < (bird_pos.x + 34) and y >= bird_pos.y and y < (bird_pos.y + 24)) then
 
                 -- For an undetermined reason sprites warp at the left edge and this is needed to correct it.
-                dX := (x - bird_pos.x + 1) mod 34;
+                dX := (x - bird_pos.x + 1);
+                if (dX = 34) then
+                    dX := 0;
+                end if;
                 dY := y - bird_pos.y;
                 if (dX = 0) then
-                    dY := (dY + 1) mod 24;
+                    dY := (dY + 1);
+                    if (dY = 24) then
+                        dY := 0;
+                    end if;
                 end if;
 
-                rom_address <= std_logic_vector(to_unsigned((dY / 2) * 17 + (dX / 2), 8));
+                rom_address <= std_logic_vector(to_unsigned((dY / 2) * 17 + (dX / 2), 16));
                 current_pixel_hold := rom_data;
                 if (current_pixel_hold /= x"000") then
                     current_pixel <= current_pixel_hold;
