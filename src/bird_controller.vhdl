@@ -24,10 +24,13 @@ begin
     begin
         if (rising_edge(clock_60Hz)) then
             if (init = '1') then
+                -- Middle of the screen
                 bird_pos.y <= MAX_Y / 2 - SPRITE_BIRD_HEIGHT / 2;
+                bird_y_vel <= 0;
             else
                 y_pos := bird_pos.y;
 
+                -- Only increase the bird's Y velocity every 2 frames
                 if (flip_flop) then
                     y_vel := bird_y_vel + 1;
                 else
@@ -35,10 +38,12 @@ begin
                 end if;
                 flip_flop <= not flip_flop;
 
+                -- Cap the Y velocity
                 if (y_vel > BIRD_MAX_VEL) then
                     y_vel := BIRD_MAX_VEL;
                 end if;
 
+                -- Set the Y velocity to the impulse if the mouse button has been pressed
                 if (left_click = '1' and not left_click_mem) then
                     y_vel := BIRD_IMPULSE_VEL;
                     left_click_mem <= true;
@@ -47,6 +52,7 @@ begin
                 end if;
 
                 y_pos := y_pos + y_vel;
+                -- Stop the bird if it hits the ground
                 if (y_pos + 2 * SPRITE_BIRD_HEIGHT > GROUND_START_Y) then
                     y_pos := GROUND_START_Y - 2 * SPRITE_BIRD_HEIGHT;
                     y_vel := 0;

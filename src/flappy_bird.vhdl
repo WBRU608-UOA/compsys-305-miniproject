@@ -78,7 +78,7 @@ architecture behaviour of flappy_bird is
 
     component bird_controller is
         port (
-            clock_60Hz : in std_logic;
+            clock_60Hz, init : in std_logic;
             bird_pos : inout t_bird_posn;
             left_click : in std_logic
         );
@@ -107,6 +107,7 @@ begin
         BCD_digit => std_logic_vector(to_unsigned(score(0), 4)), SevenSeg_out => HEX0
     );
 
+    -- Use `simple_graphics_controller` for basic output
     graphics: graphics_controller port map (
         CLOCK2_50 => CLOCK2_50, clock_60Hz => clock_60Hz,
         VGA_HS => VGA_HS, VGA_VS => vertical_sync, 
@@ -125,7 +126,8 @@ begin
     bird : bird_controller port map (
         clock_60Hz => clock_60Hz,
         bird_pos => bird_pos,
-        left_click => left_button
+        left_click => left_button,
+        init => init
     );
 
     scorer : score_controller port map (
@@ -159,7 +161,7 @@ begin
         end if;
     end process;
 
-    score_string <= "Score: " & character'val(score(3)) & character'val(score(2)) & character'val(score(1)) & character'val(score(0));
+    score_string <= "Score: " & character'val(score(3) + 48) & character'val(score(2) + 48) & character'val(score(1) + 48) & character'val(score(0) + 48);
 
     VGA_VS <= vertical_sync;
     clock_60Hz <= not vertical_sync;

@@ -176,6 +176,8 @@ begin
 
                 rom_b := rom_address_b;
 
+                -- Rendering is all shifted one pixel to the right, to counteract the ROM propagation delay. This means the leftmost pixel column is rendered black.
+
                 -- 'B' LAYER (renders behind 'A' layer)
 
                 render_b := false;
@@ -191,12 +193,15 @@ begin
                 -- Draw pipes
                 for i in 0 to 2 loop
                     pipe_pos := pipe_posns(i);
+                    -- Check the current pixel is within the pipe horixzontally and not inside the gap
                     if (x >= pipe_pos.x - PIPE_WIDTH / 2 and x <= pipe_pos.x + PIPE_WIDTH / 2 and y < GROUND_START_Y and (y < pipe_pos.y - PIPE_GAP_RADIUS or y >= pipe_pos.y + PIPE_GAP_RADIUS)) then
                         dY := y - pipe_pos.y;
+                        -- Check if the pixel is in the body of the pipe
                         if (dY < -PIPE_GAP_RADIUS - 2 * SPRITE_PIPE_HEAD_HEIGHT or dY >= PIPE_GAP_RADIUS + 2 * SPRITE_PIPE_HEAD_HEIGHT) then
                             x_start := pipe_pos.x - SPRITE_PIPE_BODY_WIDTH;
                             x_end := pipe_pos.x + SPRITE_PIPE_BODY_WIDTH;
 
+                            -- We need another horizontal check here, as the body's 2 pixels thinner than the pipe overall
                             if (x >= x_start and x <= x_end and (x < x_end or y < BACKGROUND_START_Y)) then
                                 dX := x - x_start;
                                 rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_BODY_OFFSET + (dX / 2), ADDRESS_WIDTH));
@@ -205,6 +210,7 @@ begin
                                 end if;
                             end if;
                         else
+                            -- Get the appropriate delta depending on if we're rendering the upper or lower pipe head
                             if (dY >= PIPE_GAP_RADIUS) then
                                 dY := dY - PIPE_GAP_RADIUS;
                             elsif dY < -PIPE_GAP_RADIUS then
@@ -214,6 +220,7 @@ begin
                             x_start := pipe_pos.x - SPRITE_PIPE_HEAD_WIDTH;
                             x_end := pipe_pos.x + SPRITE_PIPE_HEAD_WIDTH;
 
+                            -- This check fixes dragging pixels in the section in front of the background scenery
                             if (x < x_end or y < BACKGROUND_START_Y) then
                                 dX := x - x_start;
                                 rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_HEAD_OFFSET + (dY / 2) * SPRITE_PIPE_HEAD_WIDTH + (dX / 2), ADDRESS_WIDTH));
@@ -226,6 +233,7 @@ begin
                 end loop;
 
                 -- 'A' LAYER (renders behind Text layer)
+                -- We assign the ROM address directly in this layer as we assume two sprites in the A layer NEVER overlap.
 
                 render_a := false;
 
@@ -258,22 +266,28 @@ begin
                     char_row <= std_logic_vector(to_unsigned(dY / 2, 3));
                     char_col <= std_logic_vector(to_unsigned(dX / 2, 3));
 
+                    -- Get the ASCII ordinal of the character and send that to the ROM
                     char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
                     render_text := true;
                 end if;
             end if;
 
+            -- We send pixel data out when the 25MHz is low, so that it's rendered when it goes high
             if (clock_25MHz = '0') then
+                -- Render layer B at the back
                 if (render_layer_b and rom_data_b /= x"000") then
                     current_pixel_computed := rom_data_b;
                 end if;
+                -- Render layer A in front of that
                 if (render_layer_a and rom_data_a /= x"000") then
                     current_pixel_computed := rom_data_a;
                 end if;
+                -- Render the text layer at the front
                 if (render_layer_text and char_bit = '1') then
                     current_pixel_computed := x"fff";
                 end if;
 
+                -- The aforementioned black leftmost column (would be garbage otherwise)
                 if (x = 0) then
                     current_pixel <= x"000";
                 else
@@ -291,6 +305,7 @@ begin
         end if;
     end process;
 
+    -- Scroll the parallax backgrounds
     process (clock_60Hz)
         variable bg_offset, gr_offset: integer;
     begin
