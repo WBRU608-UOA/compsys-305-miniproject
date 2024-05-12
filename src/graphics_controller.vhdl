@@ -214,7 +214,7 @@ begin
                             if (dY >= PIPE_GAP_RADIUS) then
                                 dY := dY - PIPE_GAP_RADIUS;
                             elsif dY < -PIPE_GAP_RADIUS then
-                                dY := SPRITE_PIPE_HEAD_HEIGHT * 2 + (dY + PIPE_GAP_RADIUS);
+                                dY := SPRITE_PIPE_HEAD_HEIGHT * 2 - (dY + PIPE_GAP_RADIUS + SPRITE_PIPE_HEAD_HEIGHT * 2) - 1;
                             end if;
 
                             x_start := pipe_pos.x - SPRITE_PIPE_HEAD_WIDTH;
@@ -258,6 +258,7 @@ begin
                 render_text := false;
 
                 -- Draw score
+                -- char_rom has been modified to use a different, ASCII-compatible font
                 if (x >= score_string_pos.x and x < 11 * 2 * TEXT_CHAR_SIZE + score_string_pos.x and y >= score_string_pos.y and y < 2 * TEXT_CHAR_SIZE + score_string_pos.y) then
                     dX := x - score_string_pos.x;
                     dY := y - score_string_pos.y;
@@ -287,7 +288,7 @@ begin
                     current_pixel_computed := x"fff";
                 end if;
 
-                -- The aforementioned black leftmost column (would be garbage otherwise)
+                -- The aforementioned black leftmost column (would be garbage pixels otherwise)
                 if (x = 0) then
                     current_pixel <= x"000";
                 else
