@@ -29,14 +29,14 @@ architecture behaviour of graphics_controller is
     -- As the bird can overlap with the background and pipes, we need 2 read heads 
 
     -- Used for the bird and collectables
-	signal rom_address_a : std_logic_vector (15 downto 0);
+	signal rom_address_a : std_logic_vector (ADDRESS_WIDTH - 1 downto 0);
     signal rom_data_a : std_logic_vector(11 downto 0);
 
     -- Used for pipes and background
-	signal rom_address_b : std_logic_vector (15 downto 0);
+	signal rom_address_b : std_logic_vector (ADDRESS_WIDTH - 1 downto 0);
     signal rom_data_b : std_logic_vector(11 downto 0);
 
-    signal char_addr : std_logic_vector(5 downto 0);
+    signal char_addr : std_logic_vector(6 downto 0);
     signal char_row, char_col : std_logic_vector(2 downto 0);
     signal char_bit : std_logic;
 
@@ -44,7 +44,7 @@ architecture behaviour of graphics_controller is
 
     signal score_string_pos : t_gen_posn := (x => 33, y => 25);
 
-    signal render_layer_a, render_layer_b : boolean;
+    signal render_layer_a, render_layer_b, render_layer_text : boolean;
 
     signal ground_offset: integer := 0;
     signal background_offset : integer := 0;
@@ -58,7 +58,7 @@ architecture behaviour of graphics_controller is
     component char_rom is
         PORT
         (
-            character_address	:	IN STD_LOGIC_VECTOR (5 DOWNTO 0);
+            character_address	:	IN STD_LOGIC_VECTOR (6 DOWNTO 0);
             font_row, font_col	:	IN STD_LOGIC_VECTOR (2 DOWNTO 0);
             clock				: 	IN STD_LOGIC ;
             rom_mux_output		:	OUT STD_LOGIC
@@ -121,11 +121,11 @@ begin
 	generic map (
     operation_mode => "BIDIR_DUAL_PORT",
     width_a => 12,
-    widthad_a => 16,
-    numwords_a => 65536,
+    widthad_a => ADDRESS_WIDTH,
+    numwords_a => PIXEL_ALLOCATION,
     width_b => 12,
-    widthad_b => 16,
-    numwords_b => 65536,
+    widthad_b => ADDRESS_WIDTH,
+    numwords_b => PIXEL_ALLOCATION,
     lpm_type => "altsyncram",
     init_file  => "sprites/sprites.mif",
     intended_device_family => "Cyclone III",
@@ -141,24 +141,26 @@ begin
     outdata_reg_b => "UNREGISTERED",
     width_byteena_a => 1,
     width_byteena_b => 1
-)
-port map (
-    clock0 => CLOCK2_50,
-    clock1 => CLOCK2_50,
-    address_a => rom_address_a,
-    q_a => rom_data_a,
-    address_b => rom_address_b,
-    q_b => rom_data_b
-);
+    )
+    port map (
+        clock0 => CLOCK2_50,
+        clock1 => CLOCK2_50,
+        address_a => rom_address_a,
+        q_a => rom_data_a,
+        address_b => rom_address_b,
+        q_b => rom_data_b
+    );
 
     process (CLOCK2_50)
-        variable x, y, bg_dX, pi_dX, bi_dX, gr_dX, te_dX, bg_dY, pi_dY, bi_dY, gr_dY, te_dY, char_ord : integer;
+        variable x : integer range 0 to 639;
+        variable y : integer range 0 to 479;
+        variable dX, dY : integer;
         variable current_pixel_computed : std_logic_vector(11 downto 0);
         variable char : character;
         variable pipe_pos : t_pipe_posn;
-        variable render_a, render_b : boolean;
+        variable render_a, render_b, render_text : boolean;
         variable x_start, x_end : integer;
-        variable rom_b : std_logic_vector(15 downto 0);
+        variable rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
     begin
         if (rising_edge(CLOCK2_50)) then
 
@@ -174,15 +176,15 @@ port map (
 
                 rom_b := rom_address_b;
 
-                -- 'B' LAYER (Renders behind 'A' layer)
+                -- 'B' LAYER (renders behind 'A' layer)
 
                 render_b := false;
 
                 -- Draw background
                 if (y >= BACKGROUND_START_Y and y < GROUND_START_Y) then
-                    bg_dX := (x + background_offset) mod (2 * SPRITE_BACKGROUND_WIDTH);
-                    bg_dY := y - BACKGROUND_START_Y;
-                    rom_b := std_logic_vector(to_unsigned(SPRITE_BACKGROUND_OFFSET + (bg_dY / 2) * SPRITE_BACKGROUND_WIDTH + (bg_dX / 2), 16));
+                    dX := (x + background_offset) mod (2 * SPRITE_BACKGROUND_WIDTH);
+                    dY := y - BACKGROUND_START_Y;
+                    rom_b := std_logic_vector(to_unsigned(SPRITE_BACKGROUND_OFFSET + (dY / 2) * SPRITE_BACKGROUND_WIDTH + (dX / 2), ADDRESS_WIDTH));
                     render_b := true;
                 end if;
 
@@ -190,57 +192,74 @@ port map (
                 for i in 0 to 2 loop
                     pipe_pos := pipe_posns(i);
                     if (x >= pipe_pos.x - PIPE_WIDTH / 2 and x <= pipe_pos.x + PIPE_WIDTH / 2 and y < GROUND_START_Y and (y < pipe_pos.y - PIPE_GAP_RADIUS or y >= pipe_pos.y + PIPE_GAP_RADIUS)) then
-                        pi_dY := y - pipe_pos.y;
-                        if (pi_dY < -PIPE_GAP_RADIUS - 2 * SPRITE_PIPE_HEAD_HEIGHT or pi_dY >= PIPE_GAP_RADIUS + 2 * SPRITE_PIPE_HEAD_HEIGHT) then
+                        dY := y - pipe_pos.y;
+                        if (dY < -PIPE_GAP_RADIUS - 2 * SPRITE_PIPE_HEAD_HEIGHT or dY >= PIPE_GAP_RADIUS + 2 * SPRITE_PIPE_HEAD_HEIGHT) then
                             x_start := pipe_pos.x - SPRITE_PIPE_BODY_WIDTH;
                             x_end := pipe_pos.x + SPRITE_PIPE_BODY_WIDTH;
 
-                            if (x >= x_start and x <= x_end) then
-                                pi_dX := x - x_start;
-                                rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_BODY_OFFSET + (pi_dX / 2), 16));
-                                if (pi_dX > 0) then
+                            if (x >= x_start and x <= x_end and (x < x_end or y < BACKGROUND_START_Y)) then
+                                dX := x - x_start;
+                                rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_BODY_OFFSET + (dX / 2), ADDRESS_WIDTH));
+                                if (dX > 0) then
                                     render_b := true;
                                 end if;
                             end if;
                         else
-                            if (pi_dY >= PIPE_GAP_RADIUS) then
-                                pi_dY := pi_dY - PIPE_GAP_RADIUS;
-                            elsif pi_dY < -PIPE_GAP_RADIUS then
-                                pi_dY := SPRITE_PIPE_HEAD_HEIGHT * 2 + (pi_dY + PIPE_GAP_RADIUS);
+                            if (dY >= PIPE_GAP_RADIUS) then
+                                dY := dY - PIPE_GAP_RADIUS;
+                            elsif dY < -PIPE_GAP_RADIUS then
+                                dY := SPRITE_PIPE_HEAD_HEIGHT * 2 + (dY + PIPE_GAP_RADIUS);
                             end if;
 
                             x_start := pipe_pos.x - SPRITE_PIPE_HEAD_WIDTH;
                             x_end := pipe_pos.x + SPRITE_PIPE_HEAD_WIDTH;
 
-                            pi_dX := x - x_start;
-                            rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_HEAD_OFFSET + (pi_dY / 2) * SPRITE_PIPE_HEAD_WIDTH + (pi_dX / 2), 16));
-                            if (pi_dX > 0) then
-                                render_b := true;
+                            if (x < x_end or y < BACKGROUND_START_Y) then
+                                dX := x - x_start;
+                                rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_HEAD_OFFSET + (dY / 2) * SPRITE_PIPE_HEAD_WIDTH + (dX / 2), ADDRESS_WIDTH));
+                                if (dX > 0) then
+                                    render_b := true;
+                                end if;
                             end if;
                         end if;
                     end if;
                 end loop;
 
-                -- 'A' LAYER
+                -- 'A' LAYER (renders behind Text layer)
 
                 render_a := false;
 
                 -- Draw the bird
                 if (x >= bird_pos.x and x <= (bird_pos.x + (SPRITE_BIRD_WIDTH * 2)) and y >= bird_pos.y and y < (bird_pos.y + SPRITE_BIRD_HEIGHT * 2)) then
-                    bi_dX := x - bird_pos.x;
-                    bi_dY := y - bird_pos.y;
-                    rom_address_a <= std_logic_vector(to_unsigned(SPRITE_BIRD_OFFSET + (bi_dY / 2) * SPRITE_BIRD_WIDTH + (bi_dX / 2), 16));
-                    if (bi_dX > 0) then
+                    dX := x - bird_pos.x;
+                    dY := y - bird_pos.y;
+                    rom_address_a <= std_logic_vector(to_unsigned(SPRITE_BIRD_OFFSET + (dY / 2) * SPRITE_BIRD_WIDTH + (dX / 2), ADDRESS_WIDTH));
+                    if (dX > 0) then
                         render_a := true;
                     end if;
                 end if;
 
                 -- Draw the ground
                 if (y >= GROUND_START_Y) then
-                    gr_dX := (x + ground_offset) mod (2 * SPRITE_GROUND_WIDTH);
-                    gr_dY := y - GROUND_START_Y;
-                    rom_address_a <= std_logic_vector(to_unsigned(SPRITE_GROUND_OFFSET + (gr_dY / 2) * SPRITE_GROUND_WIDTH + (gr_dX / 2), 16));
+                    dX := (x + ground_offset) mod (2 * SPRITE_GROUND_WIDTH);
+                    dY := y - GROUND_START_Y;
+                    rom_address_a <= std_logic_vector(to_unsigned(SPRITE_GROUND_OFFSET + (dY / 2) * SPRITE_GROUND_WIDTH + (dX / 2), ADDRESS_WIDTH));
                     render_a := true;
+                end if;
+
+                render_text := false;
+
+                -- Draw score
+                if (x >= score_string_pos.x and x < 11 * 2 * TEXT_CHAR_SIZE + score_string_pos.x and y >= score_string_pos.y and y < 2 * TEXT_CHAR_SIZE + score_string_pos.y) then
+                    dX := x - score_string_pos.x;
+                    dY := y - score_string_pos.y;
+                    char := score_string(dX / (2 * TEXT_CHAR_SIZE) + 1);
+                    -- This takes the last 3 bits, which works because the characters are 8 pixels in size
+                    char_row <= std_logic_vector(to_unsigned(dY / 2, 3));
+                    char_col <= std_logic_vector(to_unsigned(dX / 2, 3));
+
+                    char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
+                    render_text := true;
                 end if;
             end if;
 
@@ -251,29 +270,10 @@ port map (
                 if (render_layer_a and rom_data_a /= x"000") then
                     current_pixel_computed := rom_data_a;
                 end if;
-            end if;
-
-            -- Draw text
-            if (x >= score_string_pos.x and x < 32 * 2 * TEXT_CHAR_SIZE + score_string_pos.x and y >= score_string_pos.y and y < 2 * TEXT_CHAR_SIZE + score_string_pos.y) then
-                te_dX := x - score_string_pos.x;
-                te_dY := y - score_string_pos.y;
-                char := score_string(te_dX / (2 * TEXT_CHAR_SIZE) + 1);
-                if (char /= ' ') then
-                    if (clock_25MHz = '1') then
-                        char_ord := character'pos(char);
-                        char_row <= std_logic_vector(to_unsigned(te_dY / 2, 3));
-                        char_col <= std_logic_vector(to_unsigned((te_dX / 2) mod (2 * TEXT_CHAR_SIZE), 3));
-                        if (char_ord >= 65 and char_ord < 91) then
-                            char_ord := char_ord - 64;
-                        end if;
-                        char_addr <= std_logic_vector(to_unsigned(char_ord, 6));
-                    elsif (char_bit = '1') then
-                        current_pixel_computed := x"fff";
-                    end if;
+                if (render_layer_text and char_bit = '1') then
+                    current_pixel_computed := x"fff";
                 end if;
-            end if;
 
-            if (clock_25MHz = '0') then
                 if (x = 0) then
                     current_pixel <= x"000";
                 else
@@ -287,6 +287,7 @@ port map (
 
             render_layer_a <= render_a;
             render_layer_b <= render_b;
+            render_layer_text <= render_text;
         end if;
     end process;
 

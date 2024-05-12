@@ -41,21 +41,18 @@ package util_pkg is
     
     type t_pipe_positions_array is array (0 to 2) of t_pipe_posn;
 
-    function itoa(n : integer) return string;
+    type t_score is array (0 to 3) of integer range 0 to 10;
+
+    function utoa(n : integer) return string;
 end package;
 
 package body util_pkg is
-    function itoa(n : integer) return string is
+    function utoa(n : integer) return string is
         variable temp : integer;
         variable ret : string(1 to 4) := (others => ' ');
     begin
         temp := n;
-        if (temp < 0) then
-            ret(1) := '-';
-        else
-            ret(1) := ' ';
-        end if;
-        for i in 0 to 2 loop
+        for i in 0 to 3 loop
             ret(4 - i) := character'val((temp mod 10) + 48);
             temp := temp / 10;
         end loop;

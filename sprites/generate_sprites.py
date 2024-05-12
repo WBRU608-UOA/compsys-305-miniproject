@@ -5,9 +5,11 @@ import glob
 images = glob.glob("./*.png")
 generated = []
 
+PIXEL_ALLOCATION = 8192
+
 with open("sprites.mif", "w") as file:
     file.writelines([
-        "Depth = 65536;\n",
+        f"Depth = {PIXEL_ALLOCATION};\n",
         "Width = 12;\n",
         "Address_radix = hex;\n",
         "Data_radix = bin;\n",
@@ -45,8 +47,12 @@ with open("sprites_pkg.vhdl", "w") as file:
     for sprite in generated:
         varBaseName = "SPRITE_" + sprite[0].upper()
         file.writelines([
-            f"\n\tconstant {varBaseName}_OFFSET : integer := {sprite[1]};\n"
-            f"\tconstant {varBaseName}_WIDTH : integer := {sprite[2]};\n"
+            f"\n\tconstant {varBaseName}_OFFSET : integer := {sprite[1]};\n",
+            f"\tconstant {varBaseName}_WIDTH : integer := {sprite[2]};\n",
             f"\tconstant {varBaseName}_HEIGHT : integer := {sprite[3]};\n"
         ])
+    file.writelines([
+        f"\n\tconstant PIXEL_ALLOCATION : integer := {PIXEL_ALLOCATION};\n",
+        f"\tconstant ADDRESS_WIDTH : integer := {(PIXEL_ALLOCATION - 1).bit_length()};\n"
+    ])
     file.write("end package;\n")
