@@ -13,6 +13,8 @@ package util_pkg is
 
     constant BACKGROUND_WIDTH : integer := SPRITE_BG_DAY_WIDTH * 2;
 
+    constant STARS_START_Y : integer := 150;
+
     constant PIPE_GAP_RADIUS : integer := 75;
 
     constant PIPE_MIN_Y : integer := PIPE_GAP_RADIUS + 59;

@@ -17,7 +17,7 @@ entity graphics_controller is
         VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
         bird_pos : in t_bird_posn;
         pipe_posns : in t_pipe_positions_array;
-        score_string : in string;
+        score : in t_score;
         day : in std_logic
     );
 end entity;
@@ -41,11 +41,16 @@ architecture behaviour of graphics_controller is
     signal char_addr : std_logic_vector(6 downto 0);
     signal char_row, char_col : std_logic_vector(2 downto 0);
     signal char_bit : std_logic;
+    -- Used for coloured and animated text
+    -- Assumes text never overlaps
+    signal text_colour : std_logic_vector(11 downto 0);
+    signal flash_counter : integer range 0 to 60;
 
     signal current_pixel : std_logic_vector(11 downto 0);
 
-    signal score_string_pos : t_gen_posn := (x => 33, y => 25);
+    signal score_string_pos : t_gen_posn := (x => 25, y => 25);
 
+    -- Enables rendering from that layer's ROM for the current pixel
     signal render_layer_a, render_layer_b, render_layer_text : boolean;
 
     signal ground_offset: integer := 0;
@@ -165,6 +170,11 @@ begin
         variable rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
         variable bg_sprite_offset : integer;
         variable start_string : string(1 to 14) := "Click to Start";
+        variable score_string : string(1 to 11) := "Score: " 
+            & character'val(score(3) + 48) 
+            & character'val(score(2) + 48) 
+            & character'val(score(1) + 48) 
+            & character'val(score(0) + 48);
     begin
         if (rising_edge(CLOCK2_50)) then
 
@@ -202,6 +212,17 @@ begin
                     render_b := true;
                 end if;
 
+                -- Draw stars
+                if (day = '0') then
+                    if (y >= STARS_START_Y and y < STARS_START_Y + 2 * SPRITE_BG_STARS_HEIGHT) then
+                        -- Same here, sprite is 128 pixels wide
+                        dX := (x / 2) mod SPRITE_BG_STARS_WIDTH;
+                        dY := (y - STARS_START_Y) / 2;
+                        rom_b := std_logic_vector(to_unsigned(SPRITE_BG_STARS_OFFSET + dY * SPRITE_BG_STARS_WIDTH + dX, ADDRESS_WIDTH));
+                        render_b := true;
+                    end if;
+                end if;
+
                 -- Draw pipes
                 for i in 0 to 2 loop
                     pipe_pos := pipe_posns(i);
@@ -214,7 +235,7 @@ begin
                             x_end := pipe_pos.x + SPRITE_PIPE_BODY_WIDTH;
 
                             -- We need another horizontal check here, as the body's 2 pixels thinner than the pipe overall
-                            if (x >= x_start and x <= x_end and (x < x_end or y < BACKGROUND_START_Y)) then
+                            if (x >= x_start and x <= x_end and (x < x_end or (y < BACKGROUND_START_Y and (y < STARS_START_Y or y >= STARS_START_Y + 2 * SPRITE_BG_STARS_HEIGHT)))) then
                                 dX := x - x_start;
                                 rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_BODY_OFFSET + (dX / 2), ADDRESS_WIDTH));
                                 if (dX > 0) then
@@ -233,7 +254,7 @@ begin
                             x_end := pipe_pos.x + SPRITE_PIPE_HEAD_WIDTH;
 
                             -- This check fixes dragging pixels in the section in front of the background scenery
-                            if (x < x_end or y < BACKGROUND_START_Y) then
+                            if (x < x_end or (y < BACKGROUND_START_Y and (y < STARS_START_Y or y >= STARS_START_Y + 2 * SPRITE_BG_STARS_HEIGHT))) then
                                 dX := x - x_start;
                                 rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_HEAD_OFFSET + (dY / 2) * SPRITE_PIPE_HEAD_WIDTH + (dX / 2), ADDRESS_WIDTH));
                                 if (dX > 0) then
@@ -261,8 +282,7 @@ begin
 
                 -- Draw the ground
                 if (y >= GROUND_START_Y) then
-                    -- This usage of `mod` is acceptable as the ground sprite is specifically
-                    -- 16 pixels wide, meaning it's optimised away to just `and 15`.
+                    -- Sprite is 16 pixels wide
                     dX := ((x + ground_offset) / 2) mod SPRITE_GROUND_WIDTH;
                     dY := (y - GROUND_START_Y) / 2;
                     rom_address_a <= std_logic_vector(to_unsigned(SPRITE_GROUND_OFFSET + dY * SPRITE_GROUND_WIDTH + dX, ADDRESS_WIDTH));
@@ -285,6 +305,7 @@ begin
 
                     -- Get the ASCII ordinal of the character and send that to the ROM
                     char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
+                    text_colour <= x"fff";
                     render_text := true;
                 end if;
                 
@@ -302,6 +323,11 @@ begin
                         char_col <= std_logic_vector(to_unsigned(dX, 3));
 
                         char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
+                        if (flash_counter >= 30) then
+                            text_colour <= x"888";
+                        else
+                            text_colour <= x"fff";
+                        end if;
                         render_text := true;
                     end if;
                 end if;
@@ -319,7 +345,7 @@ begin
                 end if;
                 -- Render the text layer at the front
                 if (render_layer_text and char_bit = '1') then
-                    current_pixel_computed := x"fff";
+                    current_pixel_computed := text_colour;
                 end if;
 
                 -- The aforementioned black leftmost column (would be garbage pixels otherwise)
@@ -341,7 +367,7 @@ begin
     end process;
 
     -- Scroll the parallax backgrounds
-    process (clock_60Hz)
+    parallax_scroll : process (clock_60Hz)
         variable bg_offset, gr_offset: integer;
     begin
         if (rising_edge(clock_60Hz) and STATE = S_GAME ) then
@@ -356,6 +382,18 @@ begin
                 gr_offset := gr_offset - 2 * SPRITE_GROUND_WIDTH;
             end if;
             ground_offset <= gr_offset;
+        end if;
+    end process;
+
+    text_flash : process(clock_60Hz)
+        variable counter_temp : integer;
+    begin
+        if (rising_edge(clock_60Hz)) then
+            counter_temp := flash_counter + 1;
+            if (counter_temp >= 60) then
+                counter_temp := 0;
+            end if;
+            flash_counter <= counter_temp;
         end if;
     end process;
 

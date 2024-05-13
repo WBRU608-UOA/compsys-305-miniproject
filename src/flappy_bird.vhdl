@@ -57,7 +57,7 @@ architecture behaviour of flappy_bird is
             VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
             bird_pos : in t_bird_posn;
             pipe_posns : in t_pipe_positions_array;
-            score_string : in string;
+            score : in t_score;
             day : in std_logic
         );
     end component;
@@ -121,7 +121,7 @@ begin
         VGA_HS => VGA_HS, VGA_VS => vertical_sync, 
         VGA_R => VGA_R, VGA_G => VGA_G, VGA_B => VGA_B,
         bird_pos => bird_pos, pipe_posns => pipe_posns,
-        score_string => score_string,
+        score => score,
         day => day
     );
 
@@ -179,8 +179,6 @@ begin
         end if;
 
     end process;
-
-    score_string <= "Score: " & character'val(score(3) + 48) & character'val(score(2) + 48) & character'val(score(1) + 48) & character'val(score(0) + 48);
 
     VGA_VS <= vertical_sync;
     clock_60Hz <= not vertical_sync;
