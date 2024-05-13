@@ -175,6 +175,7 @@ begin
             & character'val(score(2) + 48) 
             & character'val(score(1) + 48) 
             & character'val(score(0) + 48);
+        variable pipe_bg_fix : boolean;
     begin
         if (rising_edge(CLOCK2_50)) then
 
@@ -229,13 +230,17 @@ begin
                     -- Check the current pixel is within the pipe horixzontally and not inside the gap
                     if (x >= pipe_pos.x - PIPE_WIDTH / 2 and x <= pipe_pos.x + PIPE_WIDTH / 2 and y < GROUND_START_Y and (y < pipe_pos.y - PIPE_GAP_RADIUS or y >= pipe_pos.y + PIPE_GAP_RADIUS)) then
                         dY := y - pipe_pos.y;
+
                         -- Check if the pixel is in the body of the pipe
                         if (dY < -PIPE_GAP_RADIUS - 2 * SPRITE_PIPE_HEAD_HEIGHT or dY >= PIPE_GAP_RADIUS + 2 * SPRITE_PIPE_HEAD_HEIGHT) then
                             x_start := pipe_pos.x - SPRITE_PIPE_BODY_WIDTH;
                             x_end := pipe_pos.x + SPRITE_PIPE_BODY_WIDTH;
 
+                            -- This check fixes dragging pixels in the section in front of the background scenery
+                            pipe_bg_fix := (x < x_end or (y < BACKGROUND_START_Y and (day = '1' or (y < STARS_START_Y or y >= STARS_START_Y + 2 * SPRITE_BG_STARS_HEIGHT))));
+
                             -- We need another horizontal check here, as the body's 2 pixels thinner than the pipe overall
-                            if (x >= x_start and x <= x_end and (x < x_end or (y < BACKGROUND_START_Y and (y < STARS_START_Y or y >= STARS_START_Y + 2 * SPRITE_BG_STARS_HEIGHT)))) then
+                            if (x >= x_start and x <= x_end and pipe_bg_fix) then
                                 dX := x - x_start;
                                 rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_BODY_OFFSET + (dX / 2), ADDRESS_WIDTH));
                                 if (dX > 0) then
@@ -254,7 +259,9 @@ begin
                             x_end := pipe_pos.x + SPRITE_PIPE_HEAD_WIDTH;
 
                             -- This check fixes dragging pixels in the section in front of the background scenery
-                            if (x < x_end or (y < BACKGROUND_START_Y and (y < STARS_START_Y or y >= STARS_START_Y + 2 * SPRITE_BG_STARS_HEIGHT))) then
+                            pipe_bg_fix := (x < x_end or (y < BACKGROUND_START_Y and (day = '1' or (y < STARS_START_Y or y >= STARS_START_Y + 2 * SPRITE_BG_STARS_HEIGHT))));
+
+                            if (pipe_bg_fix) then
                                 dX := x - x_start;
                                 rom_b := std_logic_vector(to_unsigned(SPRITE_PIPE_HEAD_OFFSET + (dY / 2) * SPRITE_PIPE_HEAD_WIDTH + (dX / 2), ADDRESS_WIDTH));
                                 if (dX > 0) then

@@ -62,17 +62,6 @@ architecture behaviour of flappy_bird is
         );
     end component;
 
-    component simple_graphics_controller is
-        port (
-            CLOCK2_50, clock_60Hz: in std_logic;
-            VGA_HS, VGA_VS : out std_logic;
-            VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
-            bird_pos : t_bird_posn;
-            pipe_posns : t_pipe_positions_array;
-            score_string : string
-        );
-    end component;
-
     component mouse_controller is
         port (
             CLOCK2_50, reset : in std_logic;
@@ -85,7 +74,7 @@ architecture behaviour of flappy_bird is
     component bird_controller is
         port (
             state : t_game_state;
-            clock_60Hz, init : in std_logic;
+            clock_60Hz : in std_logic;
             bird_pos : inout t_bird_posn;
             left_click : in std_logic
         );
@@ -136,8 +125,7 @@ begin
         state => state,
         clock_60Hz => clock_60Hz,
         bird_pos => bird_pos,
-        left_click => left_button,
-        init => init
+        left_click => left_button
     );
 
     scorer : score_controller port map (

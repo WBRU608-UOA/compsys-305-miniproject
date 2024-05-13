@@ -5,7 +5,6 @@ use ieee.numeric_std.all;
 
 entity mouse_controller is
     port (
-        LEDR: out std_logic_vector(7 downto 0);
         CLOCK2_50, reset : in std_logic;
         left_button, right_button : out std_logic;
         cursor_row, cursor_column : out std_logic_vector(9 downto 0);
