@@ -3,11 +3,15 @@ use work.sprites_pkg.all;
 package util_pkg is
     constant MAX_X : integer := 639;
     constant MAX_Y : integer := 479;
+    constant CENTRE_X : integer := MAX_X / 2;
+    constant CENTRE_Y : integer := MAX_Y / 2;
 
     constant BIRD_MIN_X : integer := 0;
     constant BIRD_MAX_X : integer := MAX_X - SPRITE_BIRD_WIDTH * 2;
     constant BIRD_MIN_Y : integer := 0;
     constant BIRD_MAX_Y : integer := MAX_X - SPRITE_BIRD_HEIGHT * 2;
+
+    constant BACKGROUND_WIDTH : integer := SPRITE_BG_DAY_WIDTH * 2;
 
     constant PIPE_GAP_RADIUS : integer := 75;
 
@@ -19,7 +23,7 @@ package util_pkg is
     constant TEXT_CHAR_SIZE : integer := 8;
 
     constant GROUND_START_Y : integer := MAX_Y - 2 * SPRITE_GROUND_HEIGHT + 1;
-    constant BACKGROUND_START_Y : integer := GROUND_START_Y - 2 * SPRITE_BACKGROUND_HEIGHT;
+    constant BACKGROUND_START_Y : integer := GROUND_START_Y - 2 * SPRITE_BG_DAY_HEIGHT;
 
     constant BIRD_MAX_VEL : integer := 10;
     constant BIRD_IMPULSE_VEL : integer := -8;
@@ -35,7 +39,7 @@ package util_pkg is
     end record;
 
     type t_pipe_posn is record
-        x : integer range -PIPE_WIDTH / 2 to MAX_X + PIPE_WIDTH / 2;
+        x : integer range -PIPE_WIDTH / 2 to MAX_X + PIPE_WIDTH / 2 + MAX_X; -- Temp lots of blanking space
         y : integer range 29 to PIPE_MAX_Y;
     end record;
     
@@ -43,6 +47,11 @@ package util_pkg is
 
     type t_score is array (0 to 3) of integer range 0 to 10;
 
+    type t_game_state is (
+        S_INIT, S_GAME, S_DEATH
+    );
+
+    -- Don't use this unless absolutely necessary, adds a couple thousand L.E.s
     function utoa(n : integer) return string;
 end package;
 

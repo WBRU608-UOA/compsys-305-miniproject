@@ -5,7 +5,7 @@ import glob
 images = glob.glob("./*.png")
 generated = []
 
-PIXEL_ALLOCATION = 8192
+PIXEL_ALLOCATION = 16384
 
 with open("sprites.mif", "w") as file:
     file.writelines([

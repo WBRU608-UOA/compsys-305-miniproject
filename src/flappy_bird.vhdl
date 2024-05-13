@@ -10,6 +10,7 @@ entity flappy_bird is
     port (
         CLOCK2_50: in std_logic;
         KEY : in std_logic_vector(0 downto 0);
+        SW : in std_logic_vector(0 downto 0);
         LEDR : out std_logic_vector(7 downto 0);
         VGA_HS, VGA_VS : out std_logic;
         VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
@@ -19,6 +20,7 @@ entity flappy_bird is
 end entity;
 
 architecture behaviour of flappy_bird is
+    signal state : t_game_state := S_INIT;
 
     -- Bird position
     signal bird_pos : t_bird_posn := (x => 75, y => 240);
@@ -40,6 +42,8 @@ architecture behaviour of flappy_bird is
 
     signal score : t_score;
 
+    signal day : std_logic;
+
     component BCD_to_SevenSeg is
         port (BCD_digit : in std_logic_vector(3 downto 0);
         SevenSeg_out : out std_logic_vector(6 downto 0));
@@ -47,12 +51,14 @@ architecture behaviour of flappy_bird is
 
     component graphics_controller is
         port (
+            state : in t_game_state;
             CLOCK2_50, clock_60Hz: in std_logic;
             VGA_HS, VGA_VS : out std_logic;
             VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
-            bird_pos : t_bird_posn;
-            pipe_posns : t_pipe_positions_array;
-            score_string : string
+            bird_pos : in t_bird_posn;
+            pipe_posns : in t_pipe_positions_array;
+            score_string : in string;
+            day : in std_logic
         );
     end component;
 
@@ -78,6 +84,7 @@ architecture behaviour of flappy_bird is
 
     component bird_controller is
         port (
+            state : t_game_state;
             clock_60Hz, init : in std_logic;
             bird_pos : inout t_bird_posn;
             left_click : in std_logic
@@ -90,7 +97,7 @@ architecture behaviour of flappy_bird is
             pipes : in t_pipe_positions_array;
             bird : in t_bird_posn;
             score_out : out t_score;
-            init : in std_logic
+            state : in t_game_state
         );
     end component;
 begin
@@ -109,11 +116,13 @@ begin
 
     -- Use `simple_graphics_controller` for basic output
     graphics: graphics_controller port map (
+        state => state,
         CLOCK2_50 => CLOCK2_50, clock_60Hz => clock_60Hz,
         VGA_HS => VGA_HS, VGA_VS => vertical_sync, 
         VGA_R => VGA_R, VGA_G => VGA_G, VGA_B => VGA_B,
         bird_pos => bird_pos, pipe_posns => pipe_posns,
-        score_string => score_string
+        score_string => score_string,
+        day => day
     );
 
     mouse: mouse_controller port map (
@@ -124,6 +133,7 @@ begin
     );
 
     bird : bird_controller port map (
+        state => state,
         clock_60Hz => clock_60Hz,
         bird_pos => bird_pos,
         left_click => left_button,
@@ -135,7 +145,7 @@ begin
         pipes => pipe_posns,
         bird => bird_pos,
         score_out => score,
-        init => init
+        state => state
     );
 
     -- Test movement
@@ -146,19 +156,28 @@ begin
     begin
         if (init = '1') then
             for i in 0 to 2 loop
-                pipe_posns(i).x <= (640 / 3) + i * (640 / 3);
+                pipe_posns(i).x <= CENTRE_X + (640 / 3) + i * (640 / 3);
                 pipe_posns(i).y <= PIPE_MIN_Y + ((i * 1793) mod (PIPE_MAX_Y - PIPE_MIN_Y));
             end loop;
+            state <= S_INIT;
         elsif (rising_edge(clock_60Hz)) then
-            for i in 0 to 2 loop
-                pipe_pos := pipe_posns(i);
-                new_pipe_x := pipe_pos.x - 2;
-                if (new_pipe_x < -PIPE_WIDTH / 2) then
-                    new_pipe_x := MAX_X + PIPE_WIDTH / 2;
-                end if;
-                pipe_posns(i).x <= new_pipe_x;
-            end loop;
+            if (STATE = S_GAME) then
+                for i in 0 to 2 loop
+                    pipe_pos := pipe_posns(i);
+                    new_pipe_x := pipe_pos.x - 2;
+                    if (new_pipe_x < -PIPE_WIDTH / 2) then
+                        new_pipe_x := MAX_X + PIPE_WIDTH / 2;
+                    end if;
+                    pipe_posns(i).x <= new_pipe_x;
+                end loop;
+            end if;
+            if (left_button = '1' and state = S_INIT) then
+                state <= S_GAME;
+            end if;
+            
+            day <= not SW(0);
         end if;
+
     end process;
 
     score_string <= "Score: " & character'val(score(3) + 48) & character'val(score(2) + 48) & character'val(score(1) + 48) & character'val(score(0) + 48);

@@ -12,7 +12,7 @@ entity score_controller is
         pipes : in t_pipe_positions_array;
         bird : in t_bird_posn;
         score_out : out t_score;
-        init : in std_logic
+        state : in t_game_state
     );
 end entity;
 
@@ -42,12 +42,12 @@ architecture behaviour of score_controller is
         score <= score_hold;
     end procedure;
 begin
-    process (clock_60Hz)
+    process (clock_60Hz, state)
         variable new_pipe_x : integer;
         variable pipe_pos : t_pipe_posn;
         variable score_temp : natural;
     begin
-        if (init = '1') then
+        if (state = S_INIT) then
             score <= (others => 0);
         elsif (rising_edge(clock_60Hz)) then
             -- Check if any pipes passed the bird this frame, and if so increment the score

@@ -11,12 +11,14 @@ USE altera_mf.all;
 
 entity graphics_controller is
     port (
+        state : in t_game_state;
         CLOCK2_50, clock_60Hz: in std_logic;
         VGA_HS, VGA_VS : out std_logic;
         VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
         bird_pos : in t_bird_posn;
         pipe_posns : in t_pipe_positions_array;
-        score_string : in string
+        score_string : in string;
+        day : in std_logic
     );
 end entity;
 
@@ -152,19 +154,26 @@ begin
     );
 
     process (CLOCK2_50)
-        variable x : integer range 0 to 639;
-        variable y : integer range 0 to 479;
+        variable x : integer range 0 to MAX_X;
+        variable y : integer range 0 to MAX_Y;
         variable dX, dY : integer;
         variable current_pixel_computed : std_logic_vector(11 downto 0);
         variable char : character;
         variable pipe_pos : t_pipe_posn;
         variable render_a, render_b, render_text : boolean;
-        variable x_start, x_end : integer;
+        variable x_start, x_end, y_start, y_end : integer;
         variable rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
+        variable bg_sprite_offset : integer;
     begin
         if (rising_edge(CLOCK2_50)) then
 
-            current_pixel_computed := x"5cc";
+            if (day = '1') then
+                current_pixel_computed := x"5cc";
+                bg_sprite_offset := SPRITE_BG_DAY_OFFSET;
+            else
+                current_pixel_computed := x"189";
+                bg_sprite_offset := SPRITE_BG_NIGHT_OFFSET;
+            end if;
 
             -- For all draw ops involving sprites, the address is set when the 25MHz clock is high and the data is read when it is low.
             -- This is to ensure the ROM has time to stabilise its output.
@@ -184,9 +193,9 @@ begin
 
                 -- Draw background
                 if (y >= BACKGROUND_START_Y and y < GROUND_START_Y) then
-                    dX := (x + background_offset) mod (2 * SPRITE_BACKGROUND_WIDTH);
+                    dX := (x + background_offset) mod BACKGROUND_WIDTH;
                     dY := y - BACKGROUND_START_Y;
-                    rom_b := std_logic_vector(to_unsigned(SPRITE_BACKGROUND_OFFSET + (dY / 2) * SPRITE_BACKGROUND_WIDTH + (dX / 2), ADDRESS_WIDTH));
+                    rom_b := std_logic_vector(to_unsigned(bg_sprite_offset + (dY / 2) * (BACKGROUND_WIDTH / 2) + (dX / 2), ADDRESS_WIDTH));
                     render_b := true;
                 end if;
 
@@ -255,6 +264,22 @@ begin
                     render_a := true;
                 end if;
 
+                -- Draw start text
+                if (STATE = S_INIT) then
+                    x_start := CENTRE_X - SPRITE_START_WIDTH / 2;
+                    x_end := CENTRE_X + SPRITE_START_WIDTH / 2;
+                    y_start := CENTRE_Y - SPRITE_START_HEIGHT / 2;
+                    y_end := CENTRE_Y + SPRITE_START_HEIGHT / 2;
+                    if (y >= y_start and y < y_end and x >= x_start and x <= x_end) then
+                        dX := x - x_start;
+                        dY := y - y_start;
+                        rom_address_a <= std_logic_vector(to_unsigned(SPRITE_START_OFFSET + dY * SPRITE_START_WIDTH + dX, ADDRESS_WIDTH));
+                        if (dX > 0) then
+                            render_a := true;
+                        end if;
+                    end if;
+                end if;
+
                 render_text := false;
 
                 -- Draw score
@@ -310,16 +335,16 @@ begin
     process (clock_60Hz)
         variable bg_offset, gr_offset: integer;
     begin
-        if (rising_edge(clock_60Hz)) then
+        if (rising_edge(clock_60Hz) and STATE = S_GAME ) then
             bg_offset := background_offset + 1;
-            if (bg_offset = 2 * SPRITE_BACKGROUND_WIDTH) then
-                bg_offset := 0;
+            if (bg_offset >= BACKGROUND_WIDTH) then
+                bg_offset := bg_offset - BACKGROUND_WIDTH;
             end if;
             background_offset <= bg_offset;
 
             gr_offset := ground_offset + 2;
-            if (gr_offset = 2 * SPRITE_GROUND_WIDTH) then
-                gr_offset := 0;
+            if (gr_offset >= 2 * SPRITE_GROUND_WIDTH) then
+                gr_offset := gr_offset - 2 * SPRITE_GROUND_WIDTH;
             end if;
             ground_offset <= gr_offset;
         end if;

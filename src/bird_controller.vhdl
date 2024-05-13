@@ -8,6 +8,7 @@ use work.sprites_pkg.all;
 
 entity bird_controller is
     port (
+        state : t_game_state;
         clock_60Hz, init : in std_logic;
         bird_pos : inout t_bird_posn;
         left_click : in std_logic
@@ -23,7 +24,7 @@ begin
         variable y_vel, y_pos : integer;
     begin
         if (rising_edge(clock_60Hz)) then
-            if (init = '1') then
+            if (init = '1' or state = S_INIT) then
                 -- Middle of the screen
                 bird_pos.y <= MAX_Y / 2 - SPRITE_BIRD_HEIGHT / 2;
                 bird_y_vel <= 0;
