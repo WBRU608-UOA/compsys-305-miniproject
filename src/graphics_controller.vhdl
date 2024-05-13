@@ -164,6 +164,7 @@ begin
         variable x_start, x_end, y_start, y_end : integer;
         variable rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
         variable bg_sprite_offset : integer;
+        variable start_string : string(1 to 14) := "Click to Start";
     begin
         if (rising_edge(CLOCK2_50)) then
 
@@ -193,9 +194,11 @@ begin
 
                 -- Draw background
                 if (y >= BACKGROUND_START_Y and y < GROUND_START_Y) then
-                    dX := (x + background_offset) mod BACKGROUND_WIDTH;
-                    dY := y - BACKGROUND_START_Y;
-                    rom_b := std_logic_vector(to_unsigned(bg_sprite_offset + (dY / 2) * (BACKGROUND_WIDTH / 2) + (dX / 2), ADDRESS_WIDTH));
+                    -- This usage of `mod` is acceptable as the background sprites are specifically
+                    -- 128 pixels wide, meaning it's optimised away to just `and 127`.
+                    dX := ((x + background_offset) / 2) mod SPRITE_BG_DAY_WIDTH;
+                    dY := (y - BACKGROUND_START_Y) / 2;
+                    rom_b := std_logic_vector(to_unsigned(bg_sprite_offset + dY * SPRITE_BG_DAY_WIDTH + dX, ADDRESS_WIDTH));
                     render_b := true;
                 end if;
 
@@ -258,27 +261,15 @@ begin
 
                 -- Draw the ground
                 if (y >= GROUND_START_Y) then
-                    dX := (x + ground_offset) mod (2 * SPRITE_GROUND_WIDTH);
-                    dY := y - GROUND_START_Y;
-                    rom_address_a <= std_logic_vector(to_unsigned(SPRITE_GROUND_OFFSET + (dY / 2) * SPRITE_GROUND_WIDTH + (dX / 2), ADDRESS_WIDTH));
+                    -- This usage of `mod` is acceptable as the ground sprite is specifically
+                    -- 16 pixels wide, meaning it's optimised away to just `and 15`.
+                    dX := ((x + ground_offset) / 2) mod SPRITE_GROUND_WIDTH;
+                    dY := (y - GROUND_START_Y) / 2;
+                    rom_address_a <= std_logic_vector(to_unsigned(SPRITE_GROUND_OFFSET + dY * SPRITE_GROUND_WIDTH + dX, ADDRESS_WIDTH));
                     render_a := true;
                 end if;
 
-                -- Draw start text
-                if (STATE = S_INIT) then
-                    x_start := CENTRE_X - SPRITE_START_WIDTH / 2;
-                    x_end := CENTRE_X + SPRITE_START_WIDTH / 2;
-                    y_start := CENTRE_Y - SPRITE_START_HEIGHT / 2;
-                    y_end := CENTRE_Y + SPRITE_START_HEIGHT / 2;
-                    if (y >= y_start and y < y_end and x >= x_start and x <= x_end) then
-                        dX := x - x_start;
-                        dY := y - y_start;
-                        rom_address_a <= std_logic_vector(to_unsigned(SPRITE_START_OFFSET + dY * SPRITE_START_WIDTH + dX, ADDRESS_WIDTH));
-                        if (dX > 0) then
-                            render_a := true;
-                        end if;
-                    end if;
-                end if;
+                -- TEXT LAYER
 
                 render_text := false;
 
@@ -295,6 +286,24 @@ begin
                     -- Get the ASCII ordinal of the character and send that to the ROM
                     char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
                     render_text := true;
+                end if;
+                
+                -- Draw start text
+                if (STATE = S_INIT) then
+                    x_start := CENTRE_X - (start_string'length * TEXT_CHAR_SIZE / 2);
+                    x_end := CENTRE_X + (start_string'length * TEXT_CHAR_SIZE / 2);
+                    y_start := CENTRE_Y - TEXT_CHAR_SIZE / 2;
+                    y_end := CENTRE_Y + TEXT_CHAR_SIZE / 2;
+                    if (y >= y_start and y < y_end and x >= x_start and x <= x_end) then
+                        dX := x - x_start;
+                        dY := y - y_start;
+                        char := start_string(dX / TEXT_CHAR_SIZE + 1);
+                        char_row <= std_logic_vector(to_unsigned(dY, 3));
+                        char_col <= std_logic_vector(to_unsigned(dX, 3));
+
+                        char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
+                        render_text := true;
+                    end if;
                 end if;
             end if;
 
