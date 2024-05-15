@@ -5,11 +5,14 @@ import glob
 images = glob.glob("./*.png")
 generated = []
 
-PIXEL_ALLOCATION = 14
+ADDRESS_WIDTH = 14
+
+if os.path.exists("sprites_pkg.vhdl"):
+    os.remove("sprites_pkg.vhdl")
 
 with open("sprites.mif", "w") as file:
     file.writelines([
-        f"Depth = {2 ** PIXEL_ALLOCATION};\n",
+        f"Depth = {2 ** ADDRESS_WIDTH};\n",
         "Width = 12;\n",
         "Address_radix = hex;\n",
         "Data_radix = bin;\n",
@@ -40,7 +43,13 @@ with open("sprites.mif", "w") as file:
     
     file.write("End;\n")
     
-    print(f"{romSize} values.")
+    print(f"{romSize} pixels.")
+
+if romSize > 2 ** ADDRESS_WIDTH:
+    print(f"WARNING: Too many pixels for address width! Please increase it to {romSize.bit_length()}.")
+    print("MIF file not created.")
+    os.remove("sprites.mif")
+    quit()
 
 with open("sprites_pkg.vhdl", "w") as file:
     file.write("--Auto-generated constants file.\npackage sprites_pkg is")
@@ -52,7 +61,7 @@ with open("sprites_pkg.vhdl", "w") as file:
             f"\tconstant {varBaseName}_HEIGHT : integer := {sprite[3]};\n"
         ])
     file.writelines([
-        f"\n\tconstant PIXEL_ALLOCATION : integer := {2 ** PIXEL_ALLOCATION};\n",
-        f"\tconstant ADDRESS_WIDTH : integer := {PIXEL_ALLOCATION};\n"
+        f"\n\tconstant PIXEL_ALLOCATION : integer := {2 ** ADDRESS_WIDTH};\n",
+        f"\tconstant ADDRESS_WIDTH : integer := {ADDRESS_WIDTH};\n"
     ])
     file.write("end package;\n")
