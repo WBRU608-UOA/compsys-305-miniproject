@@ -10,20 +10,20 @@ entity pipe_controller is
     port (
         state : in t_game_state;
         clock_60Hz : in std_logic;
-        pipe_posns : out t_pipe_positions_array;
+        pipe_posns : out t_pipe_pos_arr;
         rng : in integer
     );
 end entity;
 
 architecture behaviour of pipe_controller is
 
-signal current_pipe_posns : t_pipe_positions_array;
+signal current_pipe_poss : t_pipe_pos_arr;
 
 begin
     process (clock_60Hz)
         variable new_pipe_x : integer;
         variable new_pipe_y : integer;
-        variable pipe_pos : t_pipe_posn;
+        variable pipe_pos : t_pipe_pos;
         variable random_y : integer;
     begin
 	
@@ -34,8 +34,8 @@ begin
             if (state = S_INIT) then
             -- initial x, y
                 for i in 0 to 2 loop
-                    current_pipe_posns(i).x <= CENTRE_X + ((SCREEN_MAX_X + PIPE_WIDTH) / 3) + i * ((SCREEN_MAX_X + PIPE_WIDTH) / 3);
-                    current_pipe_posns(i).y <= ((i * 5201314) mod (PIPE_MAX_Y - PIPE_MIN_Y + 1)) + PIPE_MIN_Y;
+                    current_pipe_poss(i).x <= CENTRE_X + ((SCREEN_MAX_X + PIPE_WIDTH) / 3) + i * ((SCREEN_MAX_X + PIPE_WIDTH) / 3);
+                    current_pipe_poss(i).y <= ((i * 5201314) mod (PIPE_MAX_Y - PIPE_MIN_Y + 1)) + PIPE_MIN_Y;
                 end loop;
 
             elsif (state = S_GAME) then
@@ -45,20 +45,20 @@ begin
 
                 -- x y generation
                 for i in 0 to 2 loop
-                    pipe_pos := current_pipe_posns(i);
+                    pipe_pos := current_pipe_poss(i);
                     new_pipe_x := pipe_pos.x - 2;
                     new_pipe_y := pipe_pos.y;
                     if (new_pipe_x < -PIPE_WIDTH / 2) then
                         new_pipe_x := SCREEN_MAX_X + PIPE_WIDTH / 2;
                         new_pipe_y := random_y;
                     end if;
-                    current_pipe_posns(i).x <= new_pipe_x;
-                    current_pipe_posns(i).y <= new_pipe_y;
+                    current_pipe_poss(i).x <= new_pipe_x;
+                    current_pipe_poss(i).y <= new_pipe_y;
                 end loop;
             end if;
         end if;
     end process;
-	 pipe_posns <= current_pipe_posns;
+	 pipe_posns <= current_pipe_poss;
 end architecture;
 
 

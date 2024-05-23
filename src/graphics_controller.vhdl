@@ -15,8 +15,8 @@ entity graphics_controller is
         CLOCK2_50, clock_60Hz: in std_logic;
         VGA_HS, VGA_VS : out std_logic;
         VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
-        bird_pos : in t_bird_posn;
-        pipe_posns : in t_pipe_positions_array;
+        bird_pos : in t_bird_pos;
+        pipe_posns : in t_pipe_pos_arr;
         score : in t_score;
         day : in std_logic
     );
@@ -163,7 +163,7 @@ begin
         variable dX, dY : integer;
         variable current_pixel_computed : std_logic_vector(11 downto 0);
         variable char : character;
-        variable pipe_pos : t_pipe_posn;
+        variable pipe_pos : t_pipe_pos;
         variable render_a, render_b, render_text : boolean;
         variable x_start, x_end, y_start, y_end : integer;
         variable rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);

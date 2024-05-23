@@ -9,8 +9,8 @@ use work.sprites_pkg.all;
 entity score_controller is
     port (
         clock_60Hz : in std_logic;
-        pipes : in t_pipe_positions_array;
-        bird : in t_bird_posn;
+        pipes : in t_pipe_pos_arr;
+        bird : in t_bird_pos;
         score_out : out t_score;
         state : in t_game_state
     );
@@ -18,7 +18,7 @@ end entity;
 
 architecture behaviour of score_controller is
     signal score : t_score;
-    signal old_pipes : t_pipe_positions_array;
+    signal old_pipes : t_pipe_pos_arr;
     -- Cascading increment
     procedure increment_score is
         variable score_hold : t_score;
@@ -44,7 +44,7 @@ architecture behaviour of score_controller is
 begin
     process (clock_60Hz, state)
         variable new_pipe_x : integer;
-        variable pipe_pos : t_pipe_posn;
+        variable pipe_pos : t_pipe_pos;
         variable score_temp : natural;
     begin
         if (state = S_INIT) then

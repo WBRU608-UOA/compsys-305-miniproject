@@ -23,9 +23,9 @@ architecture behaviour of flappy_bird is
     signal state : t_game_state := S_INIT;
 
     -- Bird position
-    signal bird_pos : t_bird_posn := (x => 75, y => 240);
+    signal bird_pos : t_bird_pos := (x => 75, y => 240);
 
-    signal pipe_posns : t_pipe_positions_array;
+    signal pipe_posns : t_pipe_pos_arr;
 
     -- Goes high at 60Hz, but spends most of the time at low - use this for rising edge detection only!
     signal clock_60Hz : std_logic;
@@ -59,8 +59,8 @@ architecture behaviour of flappy_bird is
             CLOCK2_50, clock_60Hz: in std_logic;
             VGA_HS, VGA_VS : out std_logic;
             VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
-            bird_pos : in t_bird_posn;
-            pipe_posns : in t_pipe_positions_array;
+            bird_pos : in t_bird_pos;
+            pipe_posns : in t_pipe_pos_arr;
             score : in t_score;
             day : in std_logic
         );
@@ -79,7 +79,7 @@ architecture behaviour of flappy_bird is
         port (
             state : t_game_state;
             clock_60Hz : in std_logic;
-            bird_pos : inout t_bird_posn;
+            bird_pos : inout t_bird_pos;
             left_click : in std_logic
         );
     end component;
@@ -87,8 +87,8 @@ architecture behaviour of flappy_bird is
     component score_controller is
         port (
             clock_60Hz : in std_logic;
-            pipes : in t_pipe_positions_array;
-            bird : in t_bird_posn;
+            pipes : in t_pipe_pos_arr;
+            bird : in t_bird_pos;
             score_out : out t_score;
             state : in t_game_state
         );
@@ -98,7 +98,7 @@ architecture behaviour of flappy_bird is
         port (
             state : in t_game_state;
             clock_60Hz : in std_logic;
-            pipe_posns : out t_pipe_positions_array
+            pipe_posns : out t_pipe_pos_arr
         );
     end component;
 

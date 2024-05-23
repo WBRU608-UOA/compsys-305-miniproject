@@ -23,9 +23,9 @@ architecture behaviour of flappy_bird is
     signal state : t_game_state := S_INIT;
 
     -- Bird position
-    signal bird_pos : t_bird_posn := (x => 75, y => 240);
+    signal bird_pos : t_bird_pos := (x => 75, y => 240);
 
-    signal pipe_posns : t_pipe_positions_array;
+    signal pipe_posns : t_pipe_pos_arr;
 
     -- Goes high at 60Hz, but spends most of the time at low - use this for rising edge detection only!
     signal clock_60Hz : std_logic;
@@ -45,7 +45,7 @@ architecture behaviour of flappy_bird is
     signal day : std_logic;
 
     --SM-I added this
-    signal collision_detected : std_logic;
+    signal collision_detected : boolean;
 
     signal rng : integer range 0 to 65535;
 
@@ -60,8 +60,8 @@ architecture behaviour of flappy_bird is
             CLOCK2_50, clock_60Hz: in std_logic;
             VGA_HS, VGA_VS : out std_logic;
             VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
-            bird_pos : in t_bird_posn;
-            pipe_posns : in t_pipe_positions_array;
+            bird_pos : in t_bird_pos;
+            pipe_posns : in t_pipe_pos_arr;
             score : in t_score;
             day : in std_logic
         );
@@ -80,7 +80,7 @@ architecture behaviour of flappy_bird is
         port (
             state : t_game_state;
             clock_60Hz : in std_logic;
-            bird_pos : inout t_bird_posn;
+            bird_pos : inout t_bird_pos;
             left_click : in std_logic
         );
     end component;
@@ -88,8 +88,8 @@ architecture behaviour of flappy_bird is
     component score_controller is
         port (
             clock_60Hz : in std_logic;
-            pipes : in t_pipe_positions_array;
-            bird : in t_bird_posn;
+            pipes : in t_pipe_pos_arr;
+            bird : in t_bird_pos;
             score_out : out t_score;
             state : in t_game_state
         );
@@ -99,7 +99,7 @@ architecture behaviour of flappy_bird is
         port (
             state : in t_game_state;
             clock_60Hz : in std_logic;
-            pipe_posns : out t_pipe_positions_array;
+            pipe_posns : out t_pipe_pos_arr;
             rng : in integer
         );
     end component;
@@ -108,6 +108,15 @@ architecture behaviour of flappy_bird is
         port (
             CLOCK2_50 : in std_logic;
             rng : out integer range 0 to 65535
+        );
+    end component;
+
+    component collision_controller is
+        port (
+            clock_60Hz : in std_logic;
+            bird_pos : in t_bird_pos;
+            pipe_posns : in t_pipe_pos_arr;
+            collision : out boolean -- Collision detected
         );
     end component;
 
@@ -170,6 +179,13 @@ begin
         rng => rng
     );
 
+    collision : collision_controller port map (
+        clock_60Hz => clock_60Hz,
+        bird_pos => bird_pos,
+        pipe_posns => pipe_posns,
+        collision => collision_detected
+    );
+
     process (clock_60Hz)
         variable score_temp : natural;
     begin
@@ -185,6 +201,8 @@ begin
 
     VGA_VS <= vertical_sync;
     clock_60Hz <= not vertical_sync;
+
+    LEDR(0) <= '1' when collision_detected else '0';
 
     init <= not KEY(0);
 end architecture;

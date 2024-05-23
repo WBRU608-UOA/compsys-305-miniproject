@@ -35,17 +35,17 @@ package util_pkg is
         y : integer;
     end record;
 
-    type t_bird_posn is record
+    type t_bird_pos is record
         x : integer range BIRD_MIN_X to BIRD_SCREEN_MAX_X;
         y : integer range BIRD_MIN_Y to BIRD_SCREEN_MAX_Y;
     end record;
 
-    type t_pipe_posn is record
+    type t_pipe_pos is record
         x : integer range -PIPE_WIDTH / 2 to SCREEN_MAX_X + PIPE_WIDTH / 2 + SCREEN_MAX_X; -- Temp lots of blanking space
         y : integer range 29 to PIPE_MAX_Y;
     end record;
     
-    type t_pipe_positions_array is array (0 to 2) of t_pipe_posn;
+    type t_pipe_pos_arr is array (0 to 2) of t_pipe_pos;
 
     type t_score is array (0 to 3) of integer range 0 to 10;
 
