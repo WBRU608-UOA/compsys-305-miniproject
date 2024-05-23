@@ -36,7 +36,7 @@ begin
 
             -- initial x, y
                 for i in 0 to 2 loop
-                    current_pipe_posns(i).x <= CENTRE_X + (640 / 3) + i * (640 / 3);
+                    current_pipe_posns(i).x <= CENTRE_X + ((MAX_X + PIPE_WIDTH) / 3) + i * ((MAX_X + PIPE_WIDTH) / 3);
                     current_pipe_posns(i).y <= ((i * 5201314) mod (PIPE_MAX_Y - PIPE_MIN_Y + 1)) + PIPE_MIN_Y;
                 end loop;
 
