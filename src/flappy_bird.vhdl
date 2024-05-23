@@ -187,14 +187,16 @@ begin
     );
 
     process (clock_60Hz)
-        variable score_temp : natural;
     begin
-        if (init = '1') then
-            state <= S_INIT;
-        elsif (rising_edge(clock_60Hz)) then
-            if (left_button = '1' and state = S_INIT) then
-                state <= S_GAME;
+        if (rising_edge(clock_60Hz)) then
+            if (init = '1') then
+                state <= S_INIT;
+            else
+                if (left_button = '1' and state = S_INIT) then
+                    state <= S_GAME;
+                end if;
             end if;
+            -- This is done here so that it's vsynced
             day <= not SW(0);
         end if;
     end process;
@@ -203,6 +205,7 @@ begin
     clock_60Hz <= not vertical_sync;
 
     LEDR(0) <= '1' when collision_detected else '0';
+    LEDR(1) <= init;
 
     init <= not KEY(0);
 end architecture;
