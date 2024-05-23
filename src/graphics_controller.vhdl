@@ -23,7 +23,6 @@ entity graphics_controller is
 end entity;
 
 architecture behaviour of graphics_controller is 
-
     signal clock_25Mhz : std_logic := '0';
     signal row, column : std_logic_vector(9 downto 0);
     signal red_enable, green_enable, blue_enable : std_logic;
@@ -44,7 +43,7 @@ architecture behaviour of graphics_controller is
     -- Used for coloured and animated text
     -- Assumes text never overlaps
     signal text_colour : std_logic_vector(11 downto 0);
-    signal flash_counter : integer range 0 to 60;
+    signal counter_60Hz : integer range 0 to 60;
 
     signal current_pixel : std_logic_vector(11 downto 0);
 
@@ -158,9 +157,9 @@ begin
         q_b => rom_data_b
     );
 
-    process (CLOCK2_50)
-        variable x : integer range 0 to MAX_X;
-        variable y : integer range 0 to MAX_Y;
+    render: process (CLOCK2_50)
+        variable x : integer range 0 to SCREEN_MAX_X;
+        variable y : integer range 0 to SCREEN_MAX_Y;
         variable dX, dY : integer;
         variable current_pixel_computed : std_logic_vector(11 downto 0);
         variable char : character;
@@ -169,6 +168,7 @@ begin
         variable x_start, x_end, y_start, y_end : integer;
         variable rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
         variable bg_sprite_offset : integer;
+        variable bird_sprite_offset : integer;
         variable start_string : string(1 to 14) := "Click to Start";
         variable score_string : string(1 to 11) := "Score: " 
             & character'val(score(3) + 48) 
@@ -179,12 +179,26 @@ begin
     begin
         if (rising_edge(CLOCK2_50)) then
 
+            -- Set the background colour and sprite according to the day/night DIP switch
             if (day = '1') then
                 current_pixel_computed := x"5cc";
                 bg_sprite_offset := SPRITE_BG_DAY_OFFSET;
             else
                 current_pixel_computed := x"189";
                 bg_sprite_offset := SPRITE_BG_NIGHT_OFFSET;
+            end if;
+
+            -- Animate the bird
+            if (state = S_GAME) then
+                if ((counter_60Hz mod 32) < 11) then
+                    bird_sprite_offset := SPRITE_BIRD_3_OFFSET;
+                elsif ((counter_60Hz mod 32) < 21) then
+                    bird_sprite_offset := SPRITE_BIRD_2_OFFSET;
+                else
+                    bird_sprite_offset := SPRITE_BIRD_OFFSET;
+                end if;
+            else
+                bird_sprite_offset := SPRITE_BIRD_2_OFFSET;
             end if;
 
             -- For all draw ops involving sprites, the address is set when the 25MHz clock is high and the data is read when it is low.
@@ -281,7 +295,7 @@ begin
                 if (x >= bird_pos.x and x <= (bird_pos.x + (SPRITE_BIRD_WIDTH * 2)) and y >= bird_pos.y and y < (bird_pos.y + SPRITE_BIRD_HEIGHT * 2)) then
                     dX := x - bird_pos.x;
                     dY := y - bird_pos.y;
-                    rom_address_a <= std_logic_vector(to_unsigned(SPRITE_BIRD_OFFSET + (dY / 2) * SPRITE_BIRD_WIDTH + (dX / 2), ADDRESS_WIDTH));
+                    rom_address_a <= std_logic_vector(to_unsigned(bird_sprite_offset + (dY / 2) * SPRITE_BIRD_WIDTH + (dX / 2), ADDRESS_WIDTH));
                     if (dX > 0) then
                         render_a := true;
                     end if;
@@ -330,7 +344,8 @@ begin
                         char_col <= std_logic_vector(to_unsigned(dX, 3));
 
                         char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
-                        if (flash_counter >= 30) then
+                        if (counter_60Hz
+                 >= 30) then
                             text_colour <= x"888";
                         else
                             text_colour <= x"fff";
@@ -392,15 +407,16 @@ begin
         end if;
     end process;
 
-    text_flash : process(clock_60Hz)
+    count : process(clock_60Hz)
         variable counter_temp : integer;
     begin
         if (rising_edge(clock_60Hz)) then
-            counter_temp := flash_counter + 1;
+            counter_temp := counter_60Hz + 1;
             if (counter_temp >= 60) then
                 counter_temp := 0;
             end if;
-            flash_counter <= counter_temp;
+            counter_60Hz
+     <= counter_temp;
         end if;
     end process;
 

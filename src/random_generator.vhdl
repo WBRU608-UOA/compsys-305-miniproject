@@ -11,17 +11,14 @@ entity random_generator is
 end entity;
 
 architecture behaviour of random_generator is
+    signal rng_internal : std_logic_vector(15 downto 0) := "0000000000000001";
 begin
     process (CLOCK2_50)
-        variable rng_internal : std_logic_vector(15 downto 0) := "0000000000000001";
     begin
         if (rising_edge(CLOCK2_50)) then
-            if (rng_internal = "0000000000000000") then
-                rng_internal := "0000000000000001";
-            end if;
             -- Using these 'tap bits' should result in it going through all 65535 states
-            rng_internal := rng_internal(14 downto 0) & (rng_internal(15) xor rng_internal(13) xor rng_internal(12) xor rng_internal(10));
-            rng <= to_integer(unsigned(rng_internal));
+            rng_internal <= rng_internal(14 downto 0) & (rng_internal(15) xor rng_internal(13) xor rng_internal(12) xor rng_internal(10));
         end if;
     end process;
+    rng <= to_integer(unsigned(rng_internal));
 end architecture;

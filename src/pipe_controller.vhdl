@@ -34,7 +34,7 @@ begin
             if (state = S_INIT) then
             -- initial x, y
                 for i in 0 to 2 loop
-                    current_pipe_posns(i).x <= CENTRE_X + ((MAX_X + PIPE_WIDTH) / 3) + i * ((MAX_X + PIPE_WIDTH) / 3);
+                    current_pipe_posns(i).x <= CENTRE_X + ((SCREEN_MAX_X + PIPE_WIDTH) / 3) + i * ((SCREEN_MAX_X + PIPE_WIDTH) / 3);
                     current_pipe_posns(i).y <= ((i * 5201314) mod (PIPE_MAX_Y - PIPE_MIN_Y + 1)) + PIPE_MIN_Y;
                 end loop;
 
@@ -49,7 +49,7 @@ begin
                     new_pipe_x := pipe_pos.x - 2;
                     new_pipe_y := pipe_pos.y;
                     if (new_pipe_x < -PIPE_WIDTH / 2) then
-                        new_pipe_x := MAX_X + PIPE_WIDTH / 2;
+                        new_pipe_x := SCREEN_MAX_X + PIPE_WIDTH / 2;
                         new_pipe_y := random_y;
                     end if;
                     current_pipe_posns(i).x <= new_pipe_x;

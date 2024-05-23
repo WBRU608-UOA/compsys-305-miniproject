@@ -26,7 +26,7 @@ begin
         if (rising_edge(clock_60Hz)) then
             if (state = S_INIT) then
                 -- Middle of the screen
-                bird_pos.y <= MAX_Y / 2 - SPRITE_BIRD_HEIGHT / 2;
+                bird_pos.y <= SCREEN_MAX_Y / 2 - SPRITE_BIRD_HEIGHT / 2;
                 bird_y_vel <= 0;
             else
                 y_pos := bird_pos.y;
