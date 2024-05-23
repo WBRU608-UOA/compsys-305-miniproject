@@ -155,6 +155,14 @@ begin
         pipe_posns => pipe_posns
     );
 
+    bird_coll: bird_collision port map(
+        clock_60Hz    => clock_60Hz,
+        reset         => init,
+        bird_pos_coll => bird_pos,
+        pipe_pos_coll => pipe_posns,--passing in array
+        collide       => collision_detected
+    ); 
+
     -- Test movement
     process (clock_60Hz)
         variable score_temp : natural;
