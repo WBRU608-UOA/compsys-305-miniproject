@@ -44,6 +44,10 @@ architecture behaviour of flappy_bird is
 
     signal day : std_logic;
 
+    --SM-I added this
+    signal collision_detected : std_logic;
+
+
     component BCD_to_SevenSeg is
         port (BCD_digit : in std_logic_vector(3 downto 0);
         SevenSeg_out : out std_logic_vector(6 downto 0));
@@ -136,6 +140,14 @@ begin
         state => state
     );
 
+    bird_coll: bird_collision port map(
+        clock_60Hz    => clock_60Hz,
+        reset         => init,
+        bird_pos_coll => bird_pos,
+        pipe_pos_coll => pipe_posns,--passing in array
+        collide       => collision_detected
+    ); 
+    )
     -- Test movement
     process (clock_60Hz)
         variable new_pipe_x : integer;
