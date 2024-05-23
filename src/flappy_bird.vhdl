@@ -89,6 +89,15 @@ architecture behaviour of flappy_bird is
             state : in t_game_state
         );
     end component;
+
+    component pipe_controller is
+        port (
+            state : in t_game_state;
+            clock_60Hz : in std_logic;
+            pipe_posns : out t_pipe_positions_array
+        );
+    end component;
+
 begin
     score_thousands : BCD_to_SevenSeg port map (
         BCD_digit => std_logic_vector(to_unsigned(score(3), 4)), SevenSeg_out => HEX3
@@ -136,36 +145,24 @@ begin
         state => state
     );
 
+    pipe : pipe_controller port map (
+        state => state,
+        clock_60Hz => clock_60Hz,
+        pipe_posns => pipe_posns
+    );
+
     -- Test movement
     process (clock_60Hz)
-        variable new_pipe_x : integer;
-        variable pipe_pos : t_pipe_posn;
         variable score_temp : natural;
     begin
         if (init = '1') then
-            for i in 0 to 2 loop
-                pipe_posns(i).x <= CENTRE_X + (640 / 3) + i * (640 / 3);
-                pipe_posns(i).y <= PIPE_MIN_Y + ((i * 1793) mod (PIPE_MAX_Y - PIPE_MIN_Y));
-            end loop;
             state <= S_INIT;
         elsif (rising_edge(clock_60Hz)) then
-            if (STATE = S_GAME) then
-                for i in 0 to 2 loop
-                    pipe_pos := pipe_posns(i);
-                    new_pipe_x := pipe_pos.x - 2;
-                    if (new_pipe_x < -PIPE_WIDTH / 2) then
-                        new_pipe_x := MAX_X + PIPE_WIDTH / 2;
-                    end if;
-                    pipe_posns(i).x <= new_pipe_x;
-                end loop;
-            end if;
             if (left_button = '1' and state = S_INIT) then
                 state <= S_GAME;
             end if;
-            
             day <= not SW(0);
         end if;
-
     end process;
 
     VGA_VS <= vertical_sync;
