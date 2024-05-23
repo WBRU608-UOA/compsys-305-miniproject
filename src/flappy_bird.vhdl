@@ -44,6 +44,10 @@ architecture behaviour of flappy_bird is
 
     signal day : std_logic;
 
+    --SM-I added this
+    signal collision_detected : std_logic;
+
+
     component BCD_to_SevenSeg is
         port (BCD_digit : in std_logic_vector(3 downto 0);
         SevenSeg_out : out std_logic_vector(6 downto 0));
