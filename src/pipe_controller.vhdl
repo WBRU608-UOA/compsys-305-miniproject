@@ -10,7 +10,8 @@ entity pipe_controller is
     port (
         state : in t_game_state;
         clock_60Hz : in std_logic;
-        pipe_posns : out t_pipe_positions_array
+        pipe_posns : out t_pipe_positions_array;
+        rng : in integer
     );
 end entity;
 
@@ -23,7 +24,6 @@ begin
         variable new_pipe_x : integer;
         variable new_pipe_y : integer;
         variable pipe_pos : t_pipe_posn;
-        variable lfsr_y : std_logic_vector(15 downto 0) := "0000000000000001"; -- 16-bit LFSR for y
         variable random_y : integer;
     begin
 	
@@ -32,8 +32,6 @@ begin
 
             -- Reset LFSR
             if (state = S_INIT) then
-                lfsr_y := "0000000000000001";
-
             -- initial x, y
                 for i in 0 to 2 loop
                     current_pipe_posns(i).x <= CENTRE_X + ((MAX_X + PIPE_WIDTH) / 3) + i * ((MAX_X + PIPE_WIDTH) / 3);
@@ -42,11 +40,8 @@ begin
 
             elsif (state = S_GAME) then
 
-                -- random lfsr_y
-                lfsr_y := lfsr_y(14 downto 0) & (lfsr_y(15) xor lfsr_y(13));
-
                 -- Generate random y within specified ranges
-                random_y := (to_integer(unsigned(lfsr_y)) mod (PIPE_MAX_Y - PIPE_MIN_Y + 1)) + PIPE_MIN_Y;
+                random_y := (rng mod (PIPE_MAX_Y - PIPE_MIN_Y + 1)) + PIPE_MIN_Y;
 
                 -- x y generation
                 for i in 0 to 2 loop

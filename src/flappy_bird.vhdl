@@ -47,6 +47,7 @@ architecture behaviour of flappy_bird is
     --SM-I added this
     signal collision_detected : std_logic;
 
+    signal rng : integer range 0 to 65535;
 
     component BCD_to_SevenSeg is
         port (BCD_digit : in std_logic_vector(3 downto 0);
@@ -98,7 +99,15 @@ architecture behaviour of flappy_bird is
         port (
             state : in t_game_state;
             clock_60Hz : in std_logic;
-            pipe_posns : out t_pipe_positions_array
+            pipe_posns : out t_pipe_positions_array;
+            rng : in integer
+        );
+    end component;
+
+    component random_generator is
+        port (
+            CLOCK2_50 : in std_logic;
+            rng : out integer range 0 to 65535
         );
     end component;
 
@@ -152,10 +161,15 @@ begin
     pipe : pipe_controller port map (
         state => state,
         clock_60Hz => clock_60Hz,
-        pipe_posns => pipe_posns
+        pipe_posns => pipe_posns,
+        rng => rng
     );
 
-    -- Test movement
+    random : random_generator port map (
+        CLOCK2_50 => CLOCK2_50,
+        rng => rng
+    );
+
     process (clock_60Hz)
         variable score_temp : natural;
     begin
