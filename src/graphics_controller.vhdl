@@ -47,8 +47,6 @@ architecture behaviour of graphics_controller is
 
     signal current_pixel : std_logic_vector(11 downto 0);
 
-    signal score_string_pos : t_gen_posn := (x => 25, y => 25);
-
     -- Enables rendering from that layer's ROM for the current pixel
     signal render_layer_a, render_layer_b, render_layer_text : boolean;
 
@@ -161,23 +159,40 @@ begin
         variable x : integer range 0 to SCREEN_MAX_X;
         variable y : integer range 0 to SCREEN_MAX_Y;
         variable dX, dY : integer;
+
         variable current_pixel_computed : std_logic_vector(11 downto 0);
+
+        variable start_string : string(1 to 14) := "Click to Start";
         variable char : character;
+
         variable pipe_pos : t_pipe_pos;
-        variable render_a, render_b, render_text : boolean;
-        variable x_start, x_end, y_start, y_end : integer;
+        variable pipe_bg_fix : boolean;
+
         variable rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
+
+        variable render_a, render_b, render_text : boolean;
+
+        variable x_start, x_end, y_start, y_end : integer;
+
         variable bg_sprite_offset : integer;
         variable bird_sprite_offset : integer;
-        variable start_string : string(1 to 14) := "Click to Start";
-        variable score_string : string(1 to 11) := "Score: " 
-            & character'val(score(3) + 48) 
-            & character'val(score(2) + 48) 
-            & character'val(score(1) + 48) 
-            & character'val(score(0) + 48);
-        variable pipe_bg_fix : boolean;
+
+        variable digit : integer range 0 to 10; -- 10 is empty
+        variable place : integer range 0 to 2;
+        variable score_length : integer range 1 to 3;
+        variable score_pos : t_gen_posn;
     begin
         if (rising_edge(CLOCK2_50)) then
+            -- Figure out the length of the score
+            if (score(2) = 0 and score(1) = 0) then
+                score_length := 1;
+            elsif (score(2) = 0) then
+                score_length := 2;
+            else
+                score_length := 3;
+            end if;
+            -- Use that to centre the score position
+            score_pos := (x => SCREEN_CENTRE_X - (6 - score_length) * SPRITE_NUMBERS_WIDTH, y => 25);
 
             -- Set the background colour and sprite according to the day/night DIP switch
             if (day = '1') then
@@ -310,32 +325,46 @@ begin
                     render_a := true;
                 end if;
 
+                -- Score is rendered as a sprite on the A layer, so that B&W can be used without requiring a new text ROM format
+                if (x >= score_pos.x and x <= 3 * 2 * SPRITE_NUMBERS_WIDTH + score_pos.x and y >= score_pos.y and y < 2 * TEXT_NUMBER_HEIGHT + score_pos.y) then
+                    dX := x - score_pos.x;
+                    dY := y - score_pos.y;
+
+                    -- Figure out the place - 0 is ones, 1 is tens, 2 is hundreds
+                    place := 2 - (dX / (SPRITE_NUMBERS_WIDTH * 2));
+                    digit := score(place);
+
+                    -- If the rightmost non-zero digit is past this place we render an empty sprite
+                    if (place >= score_length) then
+                        digit := 10;
+                    end if;
+
+                    rom_address_a <= std_logic_vector(to_unsigned(
+                        SPRITE_NUMBERS_OFFSET 
+                        -- Offset of digit in sprite
+                        + digit * SPRITE_NUMBERS_WIDTH * TEXT_NUMBER_HEIGHT
+                        -- Row in digit
+                        + (dY / 2) * SPRITE_NUMBERS_WIDTH
+                        -- Column in digit, with compensation for digit's place
+                        + ((dX / 2) - (2 - place) * SPRITE_NUMBERS_WIDTH),
+                        ADDRESS_WIDTH
+                    ));
+
+                    if (dX > 0) then
+                        render_a := true;
+                    end if;
+                end if;
+
                 -- TEXT LAYER
 
                 render_text := false;
-
-                -- Draw score
-                -- char_rom has been modified to use a different, ASCII-compatible font
-                if (x >= score_string_pos.x and x < 11 * 2 * TEXT_CHAR_SIZE + score_string_pos.x and y >= score_string_pos.y and y < 2 * TEXT_CHAR_SIZE + score_string_pos.y) then
-                    dX := x - score_string_pos.x;
-                    dY := y - score_string_pos.y;
-                    char := score_string(dX / (2 * TEXT_CHAR_SIZE) + 1);
-                    -- This takes the last 3 bits, which works because the characters are 8 pixels in size
-                    char_row <= std_logic_vector(to_unsigned(dY / 2, 3));
-                    char_col <= std_logic_vector(to_unsigned(dX / 2, 3));
-
-                    -- Get the ASCII ordinal of the character and send that to the ROM
-                    char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
-                    text_colour <= x"fff";
-                    render_text := true;
-                end if;
                 
                 -- Draw start text
                 if (STATE = S_INIT) then
-                    x_start := CENTRE_X - (start_string'length * TEXT_CHAR_SIZE / 2);
-                    x_end := CENTRE_X + (start_string'length * TEXT_CHAR_SIZE / 2);
-                    y_start := CENTRE_Y - TEXT_CHAR_SIZE / 2;
-                    y_end := CENTRE_Y + TEXT_CHAR_SIZE / 2;
+                    x_start := SCREEN_CENTRE_X - (start_string'length * TEXT_CHAR_SIZE / 2);
+                    x_end := SCREEN_CENTRE_X + (start_string'length * TEXT_CHAR_SIZE / 2);
+                    y_start := SCREEN_CENTRE_Y - TEXT_CHAR_SIZE / 2;
+                    y_end := SCREEN_CENTRE_Y + TEXT_CHAR_SIZE / 2;
                     if (y >= y_start and y < y_end and x >= x_start and x <= x_end) then
                         dX := x - x_start;
                         dY := y - y_start;

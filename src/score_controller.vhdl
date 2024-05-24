@@ -34,7 +34,6 @@ architecture behaviour of score_controller is
                 score_hold(2) := score_hold(2) + 1;
                 if (score_hold(2) = 10) then
                     score_hold(2) := 0;
-                    score_hold(3) := score_hold(3) + 1;
                 end if;
             end if;
         end if;

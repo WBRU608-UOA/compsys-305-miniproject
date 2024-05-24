@@ -15,7 +15,7 @@ entity flappy_bird is
         VGA_HS, VGA_VS : out std_logic;
         VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
         PS2_CLK, PS2_DAT : inout std_logic;
-        HEX0, HEX1, HEX2, HEX3 : out std_logic_vector(6 downto 0)
+        HEX0, HEX1, HEX2 : out std_logic_vector(6 downto 0)
     );
 end entity;
 
@@ -35,8 +35,6 @@ architecture behaviour of flappy_bird is
 
     signal left_button, right_button : std_logic;
     signal mouse_row, mouse_column : std_logic_vector(9 downto 0);
-
-    signal score_string : string(1 to 11) := (others => (' '));
 
     signal init : std_logic;
 
@@ -121,9 +119,6 @@ architecture behaviour of flappy_bird is
     end component;
 
 begin
-    score_thousands : BCD_to_SevenSeg port map (
-        BCD_digit => std_logic_vector(to_unsigned(score(3), 4)), SevenSeg_out => HEX3
-    );
     score_hundreds : BCD_to_SevenSeg port map (
         BCD_digit => std_logic_vector(to_unsigned(score(2), 4)), SevenSeg_out => HEX2
     );

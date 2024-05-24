@@ -5,7 +5,7 @@ import glob
 images = glob.glob("./*.png")
 generated = []
 
-ADDRESS_WIDTH = 14
+ADDRESS_WIDTH = 15
 
 if os.path.exists("sprites_pkg.vhdl"):
     os.remove("sprites_pkg.vhdl")

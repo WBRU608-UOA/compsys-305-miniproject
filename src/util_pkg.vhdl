@@ -3,8 +3,8 @@ use work.sprites_pkg.all;
 package util_pkg is
     constant SCREEN_MAX_X : integer := 639;
     constant SCREEN_MAX_Y : integer := 479;
-    constant CENTRE_X : integer := SCREEN_MAX_X / 2;
-    constant CENTRE_Y : integer := SCREEN_MAX_Y / 2;
+    constant SCREEN_CENTRE_X : integer := SCREEN_MAX_X / 2;
+    constant SCREEN_CENTRE_Y : integer := SCREEN_MAX_Y / 2;
 
     constant BIRD_MIN_X : integer := 0;
     constant BIRD_SCREEN_MAX_X : integer := SCREEN_MAX_X - SPRITE_BIRD_WIDTH * 2;
@@ -17,12 +17,14 @@ package util_pkg is
 
     constant PIPE_GAP_RADIUS : integer := 64;
 
-    constant PIPE_MIN_Y : integer := PIPE_GAP_RADIUS + 59;
-    constant PIPE_MAX_Y : integer := SCREEN_MAX_Y - PIPE_GAP_RADIUS - 60;
+    -- Allows for a fairly large range of positions whilst minimising ALM usage
+    constant PIPE_MIN_Y : integer := 112;
+    constant PIPE_MAX_Y : integer := 368;
 
     constant PIPE_WIDTH : integer := SPRITE_PIPE_HEAD_WIDTH * 2;
 
     constant TEXT_CHAR_SIZE : integer := 8;
+    constant TEXT_NUMBER_HEIGHT : integer := SPRITE_NUMBERS_HEIGHT / 11;
 
     constant GROUND_START_Y : integer := SCREEN_MAX_Y - 2 * SPRITE_GROUND_HEIGHT + 1;
     constant BACKGROUND_START_Y : integer := GROUND_START_Y - 2 * SPRITE_BG_DAY_HEIGHT;
@@ -47,7 +49,7 @@ package util_pkg is
     
     type t_pipe_pos_arr is array (0 to 2) of t_pipe_pos;
 
-    type t_score is array (0 to 3) of integer range 0 to 10;
+    type t_score is array (0 to 2) of integer range 0 to 10;
 
     type t_game_state is (
         S_INIT, S_GAME, S_DEATH

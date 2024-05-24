@@ -28,14 +28,18 @@ package sprites_pkg is
 	constant SPRITE_GROUND_WIDTH : integer := 16;
 	constant SPRITE_GROUND_HEIGHT : integer := 14;
 
-	constant SPRITE_PIPE_BODY_OFFSET : integer := 15044;
+	constant SPRITE_NUMBERS_OFFSET : integer := 15044;
+	constant SPRITE_NUMBERS_WIDTH : integer := 12;
+	constant SPRITE_NUMBERS_HEIGHT : integer := 198;
+
+	constant SPRITE_PIPE_BODY_OFFSET : integer := 17420;
 	constant SPRITE_PIPE_BODY_WIDTH : integer := 26;
 	constant SPRITE_PIPE_BODY_HEIGHT : integer := 1;
 
-	constant SPRITE_PIPE_HEAD_OFFSET : integer := 15070;
+	constant SPRITE_PIPE_HEAD_OFFSET : integer := 17446;
 	constant SPRITE_PIPE_HEAD_WIDTH : integer := 28;
 	constant SPRITE_PIPE_HEAD_HEIGHT : integer := 13;
 
-	constant PIXEL_ALLOCATION : integer := 16384;
-	constant ADDRESS_WIDTH : integer := 14;
+	constant PIXEL_ALLOCATION : integer := 32768;
+	constant ADDRESS_WIDTH : integer := 15;
 end package;
