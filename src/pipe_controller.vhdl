@@ -30,6 +30,7 @@ begin
 	 
         if (rising_edge(clock_60Hz)) then
 
+            -- State Initial
             -- Reset LFSR
             if (state = S_INIT) then
             -- initial x, y
@@ -37,7 +38,8 @@ begin
                     current_pipe_posns(i).x <= SCREEN_CENTRE_X + ((SCREEN_MAX_X + PIPE_WIDTH) / 3) + i * ((SCREEN_MAX_X + PIPE_WIDTH) / 3);
                     current_pipe_posns(i).y <= ((i * 5201314) mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
                 end loop;
-
+            
+            -- State Game
             elsif (state = S_GAME) then
 
                 -- Generate random y within specified ranges
@@ -55,6 +57,12 @@ begin
                     current_pipe_posns(i).x <= new_pipe_x;
                     current_pipe_posns(i).y <= new_pipe_y;
                 end loop;
+
+            -- State Death (do nothing lol)
+            else
+                
+                current_pipe_posns <= current_pipe_posns;
+
             end if;
         end if;
     end process;

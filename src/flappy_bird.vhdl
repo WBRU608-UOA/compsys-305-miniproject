@@ -211,6 +211,9 @@ begin
             elsif (not collision_detected and collide_mem) then
                 collide_mem <= false;
             end if;
+            if ((health = 0) and (state = S_GAME)) then
+                state <= S_DEATH;
+            end if;
 
         end if;
     end process;
