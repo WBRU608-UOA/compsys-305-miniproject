@@ -48,6 +48,8 @@ architecture behaviour of flappy_bird is
     signal collision_detected : boolean;
     signal collide_mem : boolean := false;
 
+    signal f_power_ups: t_power_ups;
+
     -- random number
     signal rng : integer range 0 to 65535;
 
@@ -109,6 +111,17 @@ architecture behaviour of flappy_bird is
             rng : in integer
         );
     end component;
+
+    component power_ups_controller is
+        port (
+            state : in t_game_state;
+            clock_60Hz : in std_logic;
+            power_up : out t_power_ups;
+            rng : in integer;
+            pipe_posns: in t_pipe_pos_arr
+        );
+    end component;
+
 
     component random_generator is
         port (
@@ -193,6 +206,15 @@ begin
         pipe_posns => pipe_posns,
         collision => collision_detected
     );
+
+    power_ups : power_ups_controller port map (
+        state => state,
+        clock_60Hz => clock_60Hz,
+        power_up=>f_power_ups,
+        rng => rng,
+        pipe_posns=>pipe_posns
+    );
+
 
     state_machine : process (clock_60Hz)
         variable health_temp : integer;
