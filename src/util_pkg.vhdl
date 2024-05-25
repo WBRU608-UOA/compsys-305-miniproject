@@ -32,6 +32,15 @@ package util_pkg is
     constant BIRD_MAX_VEL : integer := 10;
     constant BIRD_IMPULSE_VEL : integer := -8;
 
+    type t_power_ups is record
+    x : integer;
+    y : integer;
+    p_type : integer;
+    --0- health, 1-slow down, 2- ghost
+    active : boolean;
+    end record;
+    
+    
     type t_gen_pos is record
         x : integer;
         y : integer;
