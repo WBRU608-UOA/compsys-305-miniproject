@@ -44,7 +44,7 @@ begin
                         power_active:=true;
                         power_up.x<=pipe_posns(2).x+ 100;
                         power_up.y<=(rng mod 380);
-                        power_up.p_type<=(rng mod 3);
+                        power_up.p_type<=(rng mod 3);     --0- health, 1-slow down, 2- ghost
                     end if;
                     if power_active then 
                         power_ups_x := power_ups_x - 2;

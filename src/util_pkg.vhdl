@@ -17,6 +17,8 @@ package util_pkg is
 
     constant PIPE_GAP_RADIUS : integer := 64;
 
+    constant POWERUP_SIZE : integer := 24;
+
     -- Allows for a fairly large range of positions whilst minimising ALM usage
     constant PIPE_MIN_Y : integer := 112;
     constant PIPE_MAX_Y : integer := 368;
