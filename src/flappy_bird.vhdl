@@ -48,7 +48,11 @@ architecture behaviour of flappy_bird is
     signal collision_detected : boolean;
     signal collide_mem : boolean := false;
 
+    -- random number
     signal rng : integer range 0 to 65535;
+
+    -- restart counter after death
+    signal restart_counter : integer := 0;
 
     component BCD_to_SevenSeg is
         port (BCD_digit : in std_logic_vector(3 downto 0);
@@ -201,6 +205,9 @@ begin
                 if (left_button = '1' and state = S_INIT) then
                     state <= S_GAME;
                     health <= 3;
+                elsif (left_button = '1' and state = S_DEATH and restart_counter = 0) then
+                    state <= S_INIT;
+                    health <= 3;
                 end if;
             end if;
             -- This is done here so that it's vsynced
@@ -208,13 +215,20 @@ begin
 
             if (health > 0 and collision_detected and not collide_mem) then 
                 health_temp := health - 1;
+                -- enter the death state
                 if (health_temp = 0 and state = S_GAME) then
                     state <= S_DEATH;
+                    restart_counter <= 30;
                 end if;
                 collide_mem <= true;
                 health <= health_temp;
             elsif (not collision_detected and collide_mem) then
                 collide_mem <= false;
+            end if;
+
+            -- restart counter like (1s) from the death state to the game state
+            if (state = S_DEATH and restart_counter > 0) then
+                restart_counter <= restart_counter - 1;
             end if;
         end if;
     end process;
