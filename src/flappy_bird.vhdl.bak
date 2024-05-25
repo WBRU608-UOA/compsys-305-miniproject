@@ -144,7 +144,7 @@ architecture behaviour of flappy_bird is
             bird_pos : in t_bird_pos;
             power_up: in t_power_ups;
             pipe_posns : in t_pipe_pos_arr;
-            collision_type: out integer range 0 to 8 :=0 ;
+            collision_type: out integer range 0 to 8 :=0
             collision : out boolean -- Collision detected
         );
     end component;
