@@ -10,7 +10,7 @@ entity flappy_bird is
     port (
         CLOCK2_50: in std_logic;
         KEY : in std_logic_vector(0 downto 0);
-        SW : in std_logic_vector(0 downto 0);
+        SW : in std_logic_vector(1 downto 0);
         LEDR : out std_logic_vector(7 downto 0);
         VGA_HS, VGA_VS : out std_logic;
         VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
@@ -47,6 +47,7 @@ architecture behaviour of flappy_bird is
     --SM-I added this
     signal collision_detected : boolean;
     signal collide_mem : boolean := false;
+    signal coll_type : integer range 0 to 7;
 
     signal f_power_ups: t_power_ups;
 
@@ -141,7 +142,9 @@ architecture behaviour of flappy_bird is
         port (
             clock_60Hz : in std_logic;
             bird_pos : in t_bird_pos;
+            power_up: in t_power_ups;
             pipe_posns : in t_pipe_pos_arr;
+            collision_type: out integer range 0 to 8 :=0
             collision : out boolean -- Collision detected
         );
     end component;
@@ -214,7 +217,8 @@ begin
         clock_60Hz => clock_60Hz,
         bird_pos => bird_pos,
         pipe_posns => pipe_posns,
-        collision => collision_detected
+        collision => collision_detected,
+        Collision_type=>coll_type
     );
 
     power_ups : power_ups_controller port map (
@@ -249,7 +253,8 @@ begin
             if (health > 0 and collision_detected and not collide_mem) then 
                 health_temp := health - 1;
                 -- enter the death state
-                if (health_temp = 0 and state = S_GAME) then
+                if (health_temp = 0 and state = S_GAME and not SW(1)
+                ) then
                     state <= S_DEATH;
                     restart_counter <= 30;
                 end if;
