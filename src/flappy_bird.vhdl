@@ -56,6 +56,10 @@ architecture behaviour of flappy_bird is
     -- restart counter after death
     signal restart_counter : integer := 0;
 
+    -- difficulty set
+    -- level of difficulty: original speed * difficulty
+    signal difficulty: integer;
+
     component BCD_to_SevenSeg is
         port (BCD_digit : in std_logic_vector(3 downto 0);
         SevenSeg_out : out std_logic_vector(6 downto 0));
@@ -99,7 +103,8 @@ architecture behaviour of flappy_bird is
             pipes : in t_pipe_pos_arr;
             bird : in t_bird_pos;
             score_out : out t_score;
-            state : in t_game_state
+            state : in t_game_state;
+            difficulty : out integer
         );
     end component;
 
@@ -108,7 +113,8 @@ architecture behaviour of flappy_bird is
             state : in t_game_state;
             clock_60Hz : in std_logic;
             pipe_posns : out t_pipe_pos_arr;
-            rng : in integer
+            rng : in integer;
+            difficulty : in integer
         );
     end component;
 
@@ -185,14 +191,16 @@ begin
         pipes => pipe_posns,
         bird => bird_pos,
         score_out => score,
-        state => state
+        state => state,
+        difficulty => difficulty
     );
 
     pipe : pipe_controller port map (
         state => state,
         clock_60Hz => clock_60Hz,
         pipe_posns => pipe_posns,
-        rng => rng
+        rng => rng,
+        difficulty => difficulty
     );
 
     random : random_generator port map (
