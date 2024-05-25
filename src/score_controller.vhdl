@@ -12,7 +12,8 @@ entity score_controller is
         pipes : in t_pipe_pos_arr;
         bird : in t_bird_pos;
         score_out : out t_score;
-        state : in t_game_state
+        state : in t_game_state;
+        difficulty : out integer
     );
 end entity;
 
@@ -45,9 +46,11 @@ begin
         variable new_pipe_x : integer;
         variable pipe_pos : t_pipe_pos;
         variable score_temp : natural;
+        variable current_difficulty : integer;
     begin
         if (state = S_INIT) then
             score <= (others => 0);
+            current_difficulty := 0;
         elsif (rising_edge(clock_60Hz)) then
             -- Check if any pipes passed the bird this frame, and if so increment the score
             for i in 0 to 2 loop
@@ -56,7 +59,10 @@ begin
                 end if;
                 old_pipes(i) <= pipes(i);
             end loop;
+            -- each difficulty should be 10 scores a level (at least level 1)
+            current_difficulty := score(2)*10 + score(1) + 1;
         end if;
+        difficulty <= current_difficulty;
     end process;
 
     score_out <= score;
