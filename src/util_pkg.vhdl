@@ -32,7 +32,7 @@ package util_pkg is
     constant BIRD_MAX_VEL : integer := 10;
     constant BIRD_IMPULSE_VEL : integer := -8;
 
-    type t_gen_posn is record
+    type t_gen_pos is record
         x : integer;
         y : integer;
     end record;
@@ -54,21 +54,4 @@ package util_pkg is
     type t_game_state is (
         S_INIT, S_GAME, S_DEATH
     );
-
-    -- Don't use this unless absolutely necessary, adds a couple thousand L.E.s
-    function utoa(n : integer) return string;
 end package;
-
-package body util_pkg is
-    function utoa(n : integer) return string is
-        variable temp : integer;
-        variable ret : string(1 to 4) := (others => ' ');
-    begin
-        temp := n;
-        for i in 0 to 3 loop
-            ret(4 - i) := character'val((temp mod 10) + 48);
-            temp := temp / 10;
-        end loop;
-        return ret;
-    end function;
-end package body;

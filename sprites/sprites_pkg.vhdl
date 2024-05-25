@@ -40,6 +40,18 @@ package sprites_pkg is
 	constant SPRITE_PIPE_HEAD_WIDTH : integer := 28;
 	constant SPRITE_PIPE_HEAD_HEIGHT : integer := 13;
 
+	constant SPRITE_POWERUP_GHOST_OFFSET : integer := 17810;
+	constant SPRITE_POWERUP_GHOST_WIDTH : integer := 12;
+	constant SPRITE_POWERUP_GHOST_HEIGHT : integer := 12;
+
+	constant SPRITE_POWERUP_HEALTH_OFFSET : integer := 17954;
+	constant SPRITE_POWERUP_HEALTH_WIDTH : integer := 12;
+	constant SPRITE_POWERUP_HEALTH_HEIGHT : integer := 12;
+
+	constant SPRITE_POWERUP_SLOW_OFFSET : integer := 18098;
+	constant SPRITE_POWERUP_SLOW_WIDTH : integer := 12;
+	constant SPRITE_POWERUP_SLOW_HEIGHT : integer := 12;
+
 	constant PIXEL_ALLOCATION : integer := 32768;
 	constant ADDRESS_WIDTH : integer := 15;
 end package;

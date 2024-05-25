@@ -27,7 +27,7 @@ begin
     mouse_component: mouse port map (
         clock_25Mhz => clock_25MHz,
         mouse_data => PS2_DAT, mouse_clk => PS2_CLK,
-        reset => reset,
+        reset => '0',
         left_button => left_button, right_button => right_button,
         mouse_cursor_row => cursor_row, mouse_cursor_column => cursor_column
     );
