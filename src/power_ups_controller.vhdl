@@ -24,8 +24,7 @@ begin
     process (clock_60Hz)
         variable power_ups_x : integer;
         variable power_ups_y : integer;
-        variable power_ups_pos : t_gen_pos;
-        variable random_p : integer range 0 to 50;
+        variable power_active : boolean := false;
         variable power_up_go:boolean :=true ;
     begin	 
         if (rising_edge(clock_60Hz)) then
@@ -40,12 +39,21 @@ begin
                         power_up_go:=false;
                         end if;
                     end loop;
-                    if power_up_go then     
+                    if power_up_go and not power_active then     
                         power_up.active<=true;
+                        power_active:=true;
                         power_up.x<=pipe_posns(2).x+ 100;
                         power_up.y<=(rng mod 380);
                         power_up.p_type<=(rng mod 3);
                     end if;
+                    if power_active then 
+                        power_ups_x := power_ups_x - 2;
+                        if (power_ups_x < 0) then 
+                            power_active:=false;
+                            power_up.active<=false;
+                        end if;
+                    end if;
+                    power_up.x <= power_ups_x;
                 end if;
             end if;
         end if;
