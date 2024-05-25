@@ -192,16 +192,19 @@ begin
             else
                 if (left_button = '1' and state = S_INIT) then
                     state <= S_GAME;
-                    health<=3;
+                    health <= 3;
                 end if;
             end if;
             -- This is done here so that it's vsynced
             day <= not SW(0);
-            if (collision_detected and not collide) then health<=health-1;
-            collide<=true;
+            if (collision_detected and not collide) then
+                health <= health - 1;
+                collide <= true;
             elsif (not collision_detected and collide) then
-                collide<=false;
+                collide <= false;
             end if;
+            if ((health = 0) and (state = S_GAME)) then
+                state <= S_DEATH;
         end if;
     end process;
 

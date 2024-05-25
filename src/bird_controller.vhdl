@@ -24,11 +24,13 @@ begin
         variable y_vel, y_pos : integer;
     begin
         if (rising_edge(clock_60Hz)) then
+            -- State Initial
             if (state = S_INIT) then
                 -- Middle of the screen
                 bird_pos.y <= SCREEN_MAX_Y / 2 - SPRITE_BIRD_HEIGHT / 2;
                 bird_y_vel <= 0;
-            else
+            -- State Game
+            elsif (state = S_GAME) then
                 y_pos := bird_pos.y;
 
                 -- Only increase the bird's Y velocity every 2 frames
@@ -63,6 +65,14 @@ begin
                 end if;
                 bird_pos.y <= y_pos;
                 bird_y_vel <= y_vel;
+            -- State Death
+            else
+                if (y_pos >= BIRD_MIN_Y) then
+                    y_pos <= y_pos - 2;
+                else
+                    y_pos <= BIRD_MIN_Y;
+                end if;
+                bird_pos.y <= y_pos;
             end if;
         end if;
     end process;
