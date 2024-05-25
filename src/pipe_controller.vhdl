@@ -40,29 +40,25 @@ begin
                 end loop;
             
             -- State Game
-            elsif (state = S_GAME) then
-
-                -- Generate random y within specified ranges
-                random_y := (rng mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
-
-                -- x y generation
-                for i in 0 to 2 loop
-                    pipe_pos := current_pipe_posns(i);
-                    new_pipe_x := pipe_pos.x - 2;
-                    new_pipe_y := pipe_pos.y;
-                    if (new_pipe_x < -PIPE_WIDTH / 2) then
-                        new_pipe_x := SCREEN_MAX_X + PIPE_WIDTH / 2;
-                        new_pipe_y := random_y;
-                    end if;
-                    current_pipe_posns(i).x <= new_pipe_x;
-                    current_pipe_posns(i).y <= new_pipe_y;
-                end loop;
-
-            -- State Death (do nothing lol)
             else
-                
-                current_pipe_posns <= current_pipe_posns;
 
+                if (state = S_GAME) then
+                    -- Generate random y within specified ranges
+                    random_y := (rng mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
+
+                    -- x y generation
+                    for i in 0 to 2 loop
+                        pipe_pos := current_pipe_posns(i);
+                        new_pipe_x := pipe_pos.x - 2;
+                        new_pipe_y := pipe_pos.y;
+                        if (new_pipe_x < -PIPE_WIDTH / 2) then
+                            new_pipe_x := SCREEN_MAX_X + PIPE_WIDTH / 2;
+                            new_pipe_y := random_y;
+                        end if;
+                        current_pipe_posns(i).x <= new_pipe_x;
+                        current_pipe_posns(i).y <= new_pipe_y;
+                    end loop;
+                end if;
             end if;
         end if;
     end process;

@@ -205,6 +205,7 @@ begin
             end if;
             if ((health = 0) and (state = S_GAME)) then
                 state <= S_DEATH;
+            end if;
         end if;
     end process;
 

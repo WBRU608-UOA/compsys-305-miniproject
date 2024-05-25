@@ -29,8 +29,8 @@ begin
                 -- Middle of the screen
                 bird_pos.y <= SCREEN_MAX_Y / 2 - SPRITE_BIRD_HEIGHT / 2;
                 bird_y_vel <= 0;
-            -- State Game
-            elsif (state = S_GAME) then
+            -- State Game and Death
+            else
                 y_pos := bird_pos.y;
 
                 -- Only increase the bird's Y velocity every 2 frames
@@ -46,12 +46,16 @@ begin
                     y_vel := BIRD_MAX_VEL;
                 end if;
 
-                -- Set the Y velocity to the impulse if the mouse button has been pressed
-                if (left_click = '1' and not left_click_mem) then
-                    y_vel := BIRD_IMPULSE_VEL;
-                    left_click_mem <= true;
-                elsif (left_click = '0' and left_click_mem) then
-                    left_click_mem <= false;
+                -- state Game
+                if (state = S_GAME) then
+                    -- Set the Y velocity to the impulse if the mouse button has been pressed
+                    if (left_click = '1' and not left_click_mem) then
+                        y_vel := BIRD_IMPULSE_VEL;
+                        left_click_mem <= true;
+                    elsif (left_click = '0' and left_click_mem) then
+                        left_click_mem <= false;
+                    end if;
+                -- state Death: disable the mouse
                 end if;
 
                 y_pos := y_pos + y_vel;
@@ -65,14 +69,7 @@ begin
                 end if;
                 bird_pos.y <= y_pos;
                 bird_y_vel <= y_vel;
-            -- State Death
-            else
-                if (y_pos >= BIRD_MIN_Y) then
-                    y_pos <= y_pos - 2;
-                else
-                    y_pos <= BIRD_MIN_Y;
-                end if;
-                bird_pos.y <= y_pos;
+
             end if;
         end if;
     end process;
