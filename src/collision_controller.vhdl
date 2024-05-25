@@ -23,19 +23,15 @@ begin
     begin
         if (rising_edge(clock_60Hz)) then
             collision_detected := false;
-            if (bird_pos.y >= GROUND_START_Y - 2 * SPRITE_BIRD_HEIGHT) then
-                collision_detected := true;
-            else
-                for i in 0 to 2 loop
-                    if (
-                        bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > pipe_posns(i).x - PIPE_WIDTH / 2 
-                        and bird_pos.x < pipe_posns(i).x + PIPE_WIDTH / 2 
-                        and (bird_pos.y + (SPRITE_BIRD_HEIGHT * 2) >= (pipe_posns(i).y + PIPE_GAP_RADIUS) or bird_pos.y <= pipe_posns(i).y - PIPE_GAP_RADIUS)
-                    ) then 
-                        collision_detected := true;
-                    end if;
-                end loop;
-            end if;
+            for i in 0 to 2 loop
+                if (
+                    bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > pipe_posns(i).x - PIPE_WIDTH / 2 
+                    and bird_pos.x < pipe_posns(i).x + PIPE_WIDTH / 2 
+                    and (bird_pos.y + (SPRITE_BIRD_HEIGHT * 2) >= (pipe_posns(i).y + PIPE_GAP_RADIUS) or bird_pos.y <= pipe_posns(i).y - PIPE_GAP_RADIUS)
+                ) then 
+                    collision_detected := true;
+                end if;
+            end loop;
             collision <= collision_detected;
         end if;
     end process;

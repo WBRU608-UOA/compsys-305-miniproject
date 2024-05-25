@@ -15,7 +15,7 @@ entity flappy_bird is
         VGA_HS, VGA_VS : out std_logic;
         VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
         PS2_CLK, PS2_DAT : inout std_logic;
-        HEX0, HEX1, HEX2 : out std_logic_vector(6 downto 0)
+        HEX0, HEX1, HEX2, HEX5 : out std_logic_vector(6 downto 0)
     );
 end entity;
 
@@ -30,7 +30,7 @@ architecture behaviour of flappy_bird is
     -- Goes high at 60Hz, but spends most of the time at low - use this for rising edge detection only!
     signal clock_60Hz : std_logic;
 
-    signal health: integer range 0 to 31 :=3;
+    signal health: integer range 0 to 3 :=3;
 
     -- Used to drive 60Hz clock, as we know its period is also 60Hz
     signal vertical_sync : std_logic;
@@ -46,7 +46,7 @@ architecture behaviour of flappy_bird is
 
     --SM-I added this
     signal collision_detected : boolean;
-    signal collide : boolean := false;
+    signal collide_mem : boolean := false;
 
     signal rng : integer range 0 to 65535;
 
@@ -64,7 +64,8 @@ architecture behaviour of flappy_bird is
             bird_pos : in t_bird_pos;
             pipe_posns : in t_pipe_pos_arr;
             score : in t_score;
-            day : in std_logic
+            day : in std_logic;
+            health : in integer
         );
     end component;
 
@@ -132,6 +133,10 @@ begin
         BCD_digit => std_logic_vector(to_unsigned(score(0), 4)), SevenSeg_out => HEX0
     );
 
+    health_bcd : BCD_to_SevenSeg port map (
+        BCD_DIGIT => std_logic_vector(to_unsigned(health, 4)), SevenSeg_out => HEX5
+    );
+
     -- Use `simple_graphics_controller` for basic output
     graphics: graphics_controller port map (
         state => state,
@@ -140,7 +145,8 @@ begin
         VGA_R => VGA_R, VGA_G => VGA_G, VGA_B => VGA_B,
         bird_pos => bird_pos, pipe_posns => pipe_posns,
         score => score,
-        day => day
+        day => day,
+        health => health
     );
 
     mouse: mouse_controller port map (
@@ -184,11 +190,12 @@ begin
         collision => collision_detected
     );
 
-    process (clock_60Hz)
+    state_machine : process (clock_60Hz)
     begin
         if (rising_edge(clock_60Hz)) then
             if (init = '1') then
                 state <= S_INIT;
+                health <= 3;
             else
                 if (left_button = '1' and state = S_INIT) then
                     state <= S_GAME;
@@ -197,11 +204,12 @@ begin
             end if;
             -- This is done here so that it's vsynced
             day <= not SW(0);
-            if (collision_detected and not collide) then
+
+            if (health > 0 and collision_detected and not collide_mem) then 
                 health <= health - 1;
-                collide <= true;
-            elsif (not collision_detected and collide) then
-                collide <= false;
+                collide_mem <= true;
+            elsif (not collision_detected and collide_mem) then
+                collide_mem <= false;
             end if;
             if ((health = 0) and (state = S_GAME)) then
                 state <= S_DEATH;

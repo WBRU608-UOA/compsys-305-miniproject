@@ -18,7 +18,8 @@ entity graphics_controller is
         bird_pos : in t_bird_pos;
         pipe_posns : in t_pipe_pos_arr;
         score : in t_score;
-        day : in std_logic
+        day : in std_logic;
+        health : in integer
     );
 end entity;
 
@@ -44,6 +45,7 @@ architecture behaviour of graphics_controller is
     -- Assumes text never overlaps
     signal text_colour : std_logic_vector(11 downto 0);
     signal counter_60Hz : integer range 0 to 60;
+    constant health_pos : t_gen_pos := (x => 25, y => 25);
 
     signal current_pixel : std_logic_vector(11 downto 0);
 
@@ -180,7 +182,7 @@ begin
         variable digit : integer range 0 to 10; -- 10 is empty
         variable place : integer range 0 to 2;
         variable score_length : integer range 1 to 3;
-        variable score_pos : t_gen_posn;
+        variable score_pos : t_gen_pos;
     begin
         if (rising_edge(CLOCK2_50)) then
             -- Figure out the length of the score
@@ -256,7 +258,7 @@ begin
                 -- Draw pipes
                 for i in 0 to 2 loop
                     pipe_pos := pipe_posns(i);
-                    -- Check the current pixel is within the pipe horixzontally and not inside the gap
+                    -- Check the current pixel is within the pipe horizontally and not inside the gap
                     if (x >= pipe_pos.x - PIPE_WIDTH / 2 and x <= pipe_pos.x + PIPE_WIDTH / 2 and y < GROUND_START_Y and (y < pipe_pos.y - PIPE_GAP_RADIUS or y >= pipe_pos.y + PIPE_GAP_RADIUS)) then
                         dY := y - pipe_pos.y;
 
@@ -373,12 +375,35 @@ begin
                         char_col <= std_logic_vector(to_unsigned(dX, 3));
 
                         char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
-                        if (counter_60Hz
-                 >= 30) then
+                        if (counter_60Hz >= 30) then
                             text_colour <= x"888";
                         else
                             text_colour <= x"fff";
                         end if;
+
+                        if (dX > 0) then
+                            render_text := true;
+                        end if;
+                    end if;
+                end if;
+
+                -- Draw health (technically text, stored in the font sheet)
+                if (x >= health_pos.x and x < 3 * 4 * TEXT_CHAR_SIZE + health_pos.x and y >= health_pos.y and y < 4 * TEXT_CHAR_SIZE + health_pos.y) then
+                    dX := (x - health_pos.x) / 4;
+                    dY := (y - health_pos.y) / 4;
+                    place := dX / TEXT_CHAR_SIZE;
+
+                    char_row <= std_logic_vector(to_unsigned(dY, 3));
+                    char_col <= std_logic_vector(to_unsigned(dX, 3));
+
+                    if (place < health) then
+                        char_addr <= std_logic_vector(to_unsigned(16, 7));
+                    else
+                        char_addr <= std_logic_vector(to_unsigned(17, 7));
+                    end if;
+                    text_colour <= x"f00";
+                    
+                    if (x > health_pos.x) then
                         render_text := true;
                     end if;
                 end if;
