@@ -17,6 +17,8 @@ package util_pkg is
 
     constant PIPE_GAP_RADIUS : integer := 64;
 
+    constant POWERUP_SIZE : integer := 24;
+
     -- Allows for a fairly large range of positions whilst minimising ALM usage
     constant PIPE_MIN_Y : integer := 112;
     constant PIPE_MAX_Y : integer := 368;
@@ -33,11 +35,11 @@ package util_pkg is
     constant BIRD_IMPULSE_VEL : integer := -8;
 
     type t_power_ups is record
-    x : integer;
-    y : integer;
-    p_type : integer;
-    --0- health, 1-slow down, 2- ghost
-    active : boolean;
+        x : integer;
+        y : integer;
+        p_type : integer range 0 to 2;
+        --0- health, 1-slow down, 2- ghost
+        active : boolean;
     end record;
     
     

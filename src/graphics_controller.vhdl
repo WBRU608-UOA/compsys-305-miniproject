@@ -19,7 +19,8 @@ entity graphics_controller is
         pipe_posns : in t_pipe_pos_arr;
         score : in t_score;
         day : in std_logic;
-        health : in integer
+        health : in integer;
+        powerup : t_power_ups
     );
 end entity;
 
@@ -178,6 +179,7 @@ begin
 
         variable bg_sprite_offset : integer;
         variable bird_sprite_offset : integer;
+        variable powerup_sprite_offset : integer;
 
         variable digit : integer range 0 to 10; -- 10 is empty
         variable place : integer range 0 to 2;
@@ -332,6 +334,21 @@ begin
                     dY := (y - GROUND_START_Y) / 2;
                     rom_address_a <= std_logic_vector(to_unsigned(SPRITE_GROUND_OFFSET + dY * SPRITE_GROUND_WIDTH + dX, ADDRESS_WIDTH));
                     render_a := true;
+                end if;
+
+                -- Render powerups
+                if (powerup.active and x >= powerup.x and x <= (powerup.x + POWERUP_SIZE) and y >= powerup.y and y < (powerup.y + POWERUP_SIZE)) then
+                    dX := x - powerup.x;
+                    dY := y - powerup.y;
+                    case powerup.p_type is
+                        when 0 => powerup_sprite_offset := SPRITE_POWERUP_SLOW_OFFSET;
+                        when 1 => powerup_sprite_offset := SPRITE_POWERUP_HEALTH_OFFSET;
+                        when 2 => powerup_sprite_offset := SPRITE_POWERUP_GHOST_OFFSET;
+                    end case;
+                    rom_address_a <= std_logic_vector(to_unsigned(powerup_sprite_offset + (dY / 2) * (POWERUP_SIZE / 2) + (dX / 2), ADDRESS_WIDTH));
+                    if (dX > 0) then
+                        render_a := true;
+                    end if;
                 end if;
 
                 -- Score is rendered as a sprite on the A layer, so that B&W can be used without requiring a new text ROM format

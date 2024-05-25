@@ -67,7 +67,8 @@ architecture behaviour of flappy_bird is
             pipe_posns : in t_pipe_pos_arr;
             score : in t_score;
             day : in std_logic;
-            health : in integer
+            health : in integer;
+            powerup : t_power_ups
         );
     end component;
 
@@ -114,10 +115,10 @@ architecture behaviour of flappy_bird is
             clock_60Hz : in std_logic;
             power_up : out t_power_ups;
             rng : in integer;
-            pipe_posns: in t_pipe_pos_arr
+            pipe_posns: in t_pipe_pos_arr;
+            health : in integer
         );
     end component;
-
 
     component random_generator is
         port (
@@ -159,7 +160,8 @@ begin
         bird_pos => bird_pos, pipe_posns => pipe_posns,
         score => score,
         day => day,
-        health => health
+        health => health,
+        powerup => f_power_ups
     );
 
     mouse: mouse_controller port map (
@@ -206,9 +208,10 @@ begin
     power_ups : power_ups_controller port map (
         state => state,
         clock_60Hz => clock_60Hz,
-        power_up=>f_power_ups,
+        power_up => f_power_ups,
         rng => rng,
-        pipe_posns=>pipe_posns
+        pipe_posns => pipe_posns,
+        health => health
     );
 
 
