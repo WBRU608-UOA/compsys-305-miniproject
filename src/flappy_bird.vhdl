@@ -30,6 +30,8 @@ architecture behaviour of flappy_bird is
     -- Goes high at 60Hz, but spends most of the time at low - use this for rising edge detection only!
     signal clock_60Hz : std_logic;
 
+    signal health: integer range 0 to 31 :=3;
+
     -- Used to drive 60Hz clock, as we know its period is also 60Hz
     signal vertical_sync : std_logic;
 
@@ -44,6 +46,7 @@ architecture behaviour of flappy_bird is
 
     --SM-I added this
     signal collision_detected : boolean;
+    signal collide : boolean := false;
 
     signal rng : integer range 0 to 65535;
 
@@ -189,10 +192,16 @@ begin
             else
                 if (left_button = '1' and state = S_INIT) then
                     state <= S_GAME;
+                    health<=3;
                 end if;
             end if;
             -- This is done here so that it's vsynced
             day <= not SW(0);
+            if (collision_detected and not collide) then health<=health-1;
+            collide<=true;
+            elsif (not collision_detected and collide) then
+                collide<=false;
+            end if;
         end if;
     end process;
 
