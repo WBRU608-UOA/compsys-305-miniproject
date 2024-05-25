@@ -164,7 +164,7 @@ begin
 
         variable current_pixel_computed : std_logic_vector(11 downto 0);
 
-        variable start_string : string(1 to 14) := "Click to Start";
+        variable screen_centre_string : string(1 to 16);
         variable char : character;
 
         variable pipe_pos : t_pipe_pos;
@@ -195,6 +195,13 @@ begin
             end if;
             -- Use that to centre the score position
             score_pos := (x => SCREEN_CENTRE_X - (6 - score_length) * SPRITE_NUMBERS_WIDTH, y => 25);
+
+            -- Figure out the title string
+            if (STATE = S_INIT) then
+                screen_centre_string := " Click to Start ";
+            elsif (STATE = S_DEATH) then
+                screen_centre_string := "Click to Restart";
+            end if;
 
             -- Set the background colour and sprite according to the day/night DIP switch
             if (day = '1') then
@@ -361,16 +368,16 @@ begin
 
                 render_text := false;
                 
-                -- Draw start text
-                if (STATE = S_INIT) then
-                    x_start := SCREEN_CENTRE_X - (start_string'length * TEXT_CHAR_SIZE / 2);
-                    x_end := SCREEN_CENTRE_X + (start_string'length * TEXT_CHAR_SIZE / 2);
-                    y_start := SCREEN_CENTRE_Y - TEXT_CHAR_SIZE / 2;
-                    y_end := SCREEN_CENTRE_Y + TEXT_CHAR_SIZE / 2;
+                -- Draw text
+                if (state = S_INIT or state = S_DEATH) then
+                    x_start := SCREEN_CENTRE_X - (screen_centre_string'length * TEXT_CHAR_SIZE) + 2;
+                    x_end := SCREEN_CENTRE_X + (screen_centre_string'length * TEXT_CHAR_SIZE);
+                    y_start := SCREEN_CENTRE_Y - TEXT_CHAR_SIZE;
+                    y_end := SCREEN_CENTRE_Y + TEXT_CHAR_SIZE;
                     if (y >= y_start and y < y_end and x >= x_start and x <= x_end) then
-                        dX := x - x_start;
-                        dY := y - y_start;
-                        char := start_string(dX / TEXT_CHAR_SIZE + 1);
+                        dX := (x - x_start) / 2;
+                        dY := (y - y_start) / 2;
+                        char := screen_centre_string(dX / TEXT_CHAR_SIZE + 1);
                         char_row <= std_logic_vector(to_unsigned(dY, 3));
                         char_col <= std_logic_vector(to_unsigned(dX, 3));
 
@@ -398,10 +405,11 @@ begin
 
                     if (place < health) then
                         char_addr <= std_logic_vector(to_unsigned(16, 7));
+                        text_colour <= x"f00";
                     else
                         char_addr <= std_logic_vector(to_unsigned(17, 7));
+                        text_colour <= x"900";
                     end if;
-                    text_colour <= x"f00";
                     
                     if (x > health_pos.x) then
                         render_text := true;
