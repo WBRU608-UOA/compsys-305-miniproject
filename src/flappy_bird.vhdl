@@ -191,6 +191,7 @@ begin
     );
 
     state_machine : process (clock_60Hz)
+        variable health_temp : integer;
     begin
         if (rising_edge(clock_60Hz)) then
             if (init = '1') then
@@ -206,13 +207,14 @@ begin
             day <= not SW(0);
 
             if (health > 0 and collision_detected and not collide_mem) then 
-                health <= health - 1;
+                health_temp := health - 1;
+                if (health_temp = 0 and state = S_GAME) then
+                    state <= S_DEATH;
+                end if;
                 collide_mem <= true;
+                health <= health_temp;
             elsif (not collision_detected and collide_mem) then
                 collide_mem <= false;
-            end if;
-            if ((health = 0) and (state = S_GAME)) then
-                state <= S_DEATH;
             end if;
         end if;
     end process;

@@ -41,7 +41,6 @@ begin
             
             -- State Game
             else
-
                 if (state = S_GAME) then
                     -- Generate random y within specified ranges
                     random_y := (rng mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
