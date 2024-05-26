@@ -301,6 +301,7 @@ begin
                     should_kill_powerup := true;
                     if (active_powerup = 0 and health < 3) then
                         health <= health + 1;
+                        active_powerup <= 1;
                     end if;
                 end if;
             elsif (collision = C_NONE and collide_mem and state /= S_DEATH) then
