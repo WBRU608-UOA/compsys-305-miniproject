@@ -113,6 +113,7 @@ architecture behaviour of flappy_bird is
 
     component pipe_controller is
         port (
+            powerup : in t_powerup;
             state : in t_game_state;
             clock_60Hz : in std_logic;
             pipe_posns : out t_pipe_pos_arr;
@@ -204,6 +205,7 @@ begin
     );
 
     pipe : pipe_controller port map (
+        powerup => powerup,
         state => state,
         clock_60Hz => clock_60Hz,
         pipe_posns => pipe_posns,
@@ -254,18 +256,25 @@ begin
             -- This is done here so that it's vsynced
             day <= not SW(0);
 
-            -- Collision
-            if (state = S_GAME and health > 0 and collision = C_PIPE and not collide_mem) then 
-                health_temp := health - 1;
-                -- Player is dead
-                if (health_temp = 0 and not training) then
-                    state <= S_DEATH;
-                    restart_counter <= 30;
+            -- power-up style 2
+            if (powerup.p_type /= 2) then
+                if (state = S_GAME and health > 0 and collision = C_PIPE and not collide_mem) then 
+                    health_temp := health - 1;
+                    -- enter the death state
+                    if (health_temp = 0 and state = S_GAME) then
+                        state <= S_DEATH;
+                        restart_counter <= 30;
+                    end if;
+                    collide_mem <= true;
+                    health <= health_temp;
+                elsif (collision = C_NONE and collide_mem) then
+                    collide_mem <= false;
                 end if;
-                collide_mem <= true;
-                health <= health_temp;
-            elsif (collision = C_NONE and collide_mem) then
-                collide_mem <= false;
+            end if;
+
+            -- power-up type 1
+            if (health < 3 and state = S_GAME and powerup.p_type = 1) then
+                health <= health + 1;
             end if;
 
             -- Decrement the restart counter
