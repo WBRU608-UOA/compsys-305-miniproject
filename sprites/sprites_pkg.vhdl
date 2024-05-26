@@ -24,31 +24,35 @@ package sprites_pkg is
 	constant SPRITE_BIRD_3_WIDTH : integer := 17;
 	constant SPRITE_BIRD_3_HEIGHT : integer := 12;
 
-	constant SPRITE_GROUND_OFFSET : integer := 14820;
+	constant SPRITE_BIRD_GHOST_OFFSET : integer := 14820;
+	constant SPRITE_BIRD_GHOST_WIDTH : integer := 17;
+	constant SPRITE_BIRD_GHOST_HEIGHT : integer := 12;
+
+	constant SPRITE_GROUND_OFFSET : integer := 15024;
 	constant SPRITE_GROUND_WIDTH : integer := 16;
 	constant SPRITE_GROUND_HEIGHT : integer := 14;
 
-	constant SPRITE_NUMBERS_OFFSET : integer := 15044;
+	constant SPRITE_NUMBERS_OFFSET : integer := 15248;
 	constant SPRITE_NUMBERS_WIDTH : integer := 12;
 	constant SPRITE_NUMBERS_HEIGHT : integer := 198;
 
-	constant SPRITE_PIPE_BODY_OFFSET : integer := 17420;
+	constant SPRITE_PIPE_BODY_OFFSET : integer := 17624;
 	constant SPRITE_PIPE_BODY_WIDTH : integer := 26;
 	constant SPRITE_PIPE_BODY_HEIGHT : integer := 1;
 
-	constant SPRITE_PIPE_HEAD_OFFSET : integer := 17446;
+	constant SPRITE_PIPE_HEAD_OFFSET : integer := 17650;
 	constant SPRITE_PIPE_HEAD_WIDTH : integer := 28;
 	constant SPRITE_PIPE_HEAD_HEIGHT : integer := 13;
 
-	constant SPRITE_POWERUP_GHOST_OFFSET : integer := 17810;
+	constant SPRITE_POWERUP_GHOST_OFFSET : integer := 18014;
 	constant SPRITE_POWERUP_GHOST_WIDTH : integer := 12;
 	constant SPRITE_POWERUP_GHOST_HEIGHT : integer := 12;
 
-	constant SPRITE_POWERUP_HEALTH_OFFSET : integer := 17954;
+	constant SPRITE_POWERUP_HEALTH_OFFSET : integer := 18158;
 	constant SPRITE_POWERUP_HEALTH_WIDTH : integer := 12;
 	constant SPRITE_POWERUP_HEALTH_HEIGHT : integer := 12;
 
-	constant SPRITE_POWERUP_SLOW_OFFSET : integer := 18098;
+	constant SPRITE_POWERUP_SLOW_OFFSET : integer := 18302;
 	constant SPRITE_POWERUP_SLOW_WIDTH : integer := 12;
 	constant SPRITE_POWERUP_SLOW_HEIGHT : integer := 12;
 

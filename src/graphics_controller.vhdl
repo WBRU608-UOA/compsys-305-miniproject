@@ -22,7 +22,8 @@ entity graphics_controller is
         health : in integer;
         powerup : in t_powerup;
         move_pixels : in integer;
-        training : in boolean
+        training : in boolean;
+        is_ghost : in boolean
     );
 end entity;
 
@@ -174,7 +175,7 @@ begin
         variable pipe_pos : t_pipe_pos;
         variable pipe_bg_fix : boolean;
 
-        variable rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
+        variable rom_a, rom_b : std_logic_vector(ADDRESS_WIDTH - 1 downto 0);
 
         variable render_a, render_b, render_text : boolean;
 
@@ -219,7 +220,9 @@ begin
 
             -- Animate the bird
             if (state = S_GAME) then
-                if ((counter_60Hz mod 32) < 11) then
+                if (is_ghost) then
+                    bird_sprite_offset := SPRITE_BIRD_GHOST_OFFSET;
+                elsif ((counter_60Hz mod 32) < 11) then
                     bird_sprite_offset := SPRITE_BIRD_3_OFFSET;
                 elsif ((counter_60Hz mod 32) < 21) then
                     bird_sprite_offset := SPRITE_BIRD_2_OFFSET;
@@ -239,6 +242,7 @@ begin
                 y := to_integer(unsigned(row));
 
                 rom_b := rom_address_b;
+                rom_a := rom_address_a;
 
                 -- Rendering is all shifted one pixel to the right, to counteract the ROM propagation delay. This means the leftmost pixel column is rendered black.
 
@@ -320,11 +324,26 @@ begin
 
                 render_a := false;
 
+                -- Render powerups
+                if (powerup.active and x >= powerup.x and x <= (powerup.x + POWERUP_SIZE) and y >= powerup.y and y < (powerup.y + POWERUP_SIZE)) then
+                    dX := x - powerup.x;
+                    dY := y - powerup.y;
+                    case powerup.p_type is
+                        when P_HEALTH => powerup_sprite_offset := SPRITE_POWERUP_HEALTH_OFFSET;
+                        when P_SLOW => powerup_sprite_offset := SPRITE_POWERUP_SLOW_OFFSET;
+                        when P_GHOST => powerup_sprite_offset := SPRITE_POWERUP_GHOST_OFFSET;
+                    end case;
+                    rom_a := std_logic_vector(to_unsigned(powerup_sprite_offset + (dY / 2) * (POWERUP_SIZE / 2) + (dX / 2), ADDRESS_WIDTH));
+                    if (dX > 0) then
+                        render_a := true;
+                    end if;
+                end if;
+
                 -- Draw the bird
                 if (x >= bird_pos.x and x <= (bird_pos.x + (SPRITE_BIRD_WIDTH * 2)) and y >= bird_pos.y and y < (bird_pos.y + SPRITE_BIRD_HEIGHT * 2)) then
                     dX := x - bird_pos.x;
                     dY := y - bird_pos.y;
-                    rom_address_a <= std_logic_vector(to_unsigned(bird_sprite_offset + (dY / 2) * SPRITE_BIRD_WIDTH + (dX / 2), ADDRESS_WIDTH));
+                    rom_a := std_logic_vector(to_unsigned(bird_sprite_offset + (dY / 2) * SPRITE_BIRD_WIDTH + (dX / 2), ADDRESS_WIDTH));
                     if (dX > 0) then
                         render_a := true;
                     end if;
@@ -335,23 +354,8 @@ begin
                     -- Sprite is 16 pixels wide
                     dX := ((x + ground_offset) / 2) mod SPRITE_GROUND_WIDTH;
                     dY := (y - GROUND_START_Y) / 2;
-                    rom_address_a <= std_logic_vector(to_unsigned(SPRITE_GROUND_OFFSET + dY * SPRITE_GROUND_WIDTH + dX, ADDRESS_WIDTH));
+                    rom_a := std_logic_vector(to_unsigned(SPRITE_GROUND_OFFSET + dY * SPRITE_GROUND_WIDTH + dX, ADDRESS_WIDTH));
                     render_a := true;
-                end if;
-
-                -- Render powerups
-                if (powerup.active and x >= powerup.x and x <= (powerup.x + POWERUP_SIZE) and y >= powerup.y and y < (powerup.y + POWERUP_SIZE)) then
-                    dX := x - powerup.x;
-                    dY := y - powerup.y;
-                    case powerup.p_type is
-                        when P_HEALTH => powerup_sprite_offset := SPRITE_POWERUP_HEALTH_OFFSET;
-                        when P_SLOW => powerup_sprite_offset := SPRITE_POWERUP_SLOW_OFFSET;
-                        when P_GHOST => powerup_sprite_offset := SPRITE_POWERUP_GHOST_OFFSET;
-                    end case;
-                    rom_address_a <= std_logic_vector(to_unsigned(powerup_sprite_offset + (dY / 2) * (POWERUP_SIZE / 2) + (dX / 2), ADDRESS_WIDTH));
-                    if (dX > 0) then
-                        render_a := true;
-                    end if;
                 end if;
 
                 -- Score is rendered as a sprite on the A layer, so that B&W can be used without requiring a new text ROM format
@@ -368,7 +372,7 @@ begin
                         digit := 10;
                     end if;
 
-                    rom_address_a <= std_logic_vector(to_unsigned(
+                    rom_a := std_logic_vector(to_unsigned(
                         SPRITE_NUMBERS_OFFSET 
                         -- Offset of digit in sprite
                         + digit * SPRITE_NUMBERS_WIDTH * TEXT_NUMBER_HEIGHT
@@ -480,6 +484,7 @@ begin
 
             clock_25Mhz <= not clock_25Mhz;
 
+            rom_address_a <= rom_a;
             rom_address_b <= rom_b;
 
             render_layer_a <= render_a;
@@ -491,9 +496,14 @@ begin
     -- Scroll the parallax backgrounds
     parallax_scroll : process (clock_60Hz)
         variable bg_offset, gr_offset: integer;
+        variable move_pixels_temp : integer;
     begin
         if (rising_edge(clock_60Hz) and STATE = S_GAME ) then
-            bg_offset := background_offset + (move_pixels / 2);
+            move_pixels_temp := (move_pixels / 2);
+            if (move_pixels_temp = 0) then
+                move_pixels_temp := 1;
+            end if;
+            bg_offset := background_offset + move_pixels_temp;
             if (bg_offset >= BACKGROUND_WIDTH) then
                 bg_offset := bg_offset - BACKGROUND_WIDTH;
             end if;

@@ -25,15 +25,16 @@ begin
         variable powerup_x : integer;
         variable powerup_type : t_powerup_type;
         variable can_spawn_powerup : boolean;
+        variable random : std_logic_vector(1 downto 0);
     begin	 
         if (rising_edge(clock_60Hz)) then
             if (state = S_INIT) then
                 powerup.active <= false;
             elsif (state = S_GAME and not powerup.active) then
-                if (rng mod 64 = 0) then
+                if (rng mod 128 = 0) then
                     can_spawn_powerup := true;
                     for i in 0 to 2 loop
-                        if pipe_posns(i).x > 600 then
+                        if (pipe_posns(i).x > 600 or pipe_posns(i).x < -10) then
                             can_spawn_powerup := false;
                         end if;
                     end loop;
@@ -41,12 +42,28 @@ begin
                         powerup.active <= true;
                         powerup.x <= SCREEN_MAX_X;
                         powerup.y <= 112 + (rng mod 256);
-                        -- Chained mods on this 16-bit value guides the compiler into doing an AND then a simple lookup
-                        powerup_type := t_powerup_type'val((rng mod 4) mod 3);
-                        if (powerup_type = P_HEALTH and health = 3) then
-                            powerup_type := t_powerup_type'val(1 + rng mod 2);
+
+                        random := std_logic_vector(to_unsigned(rng, 2));
+
+                        if (health = 3) then
+                            if ((random and "01") = "00") then
+                                powerup_type := P_SLOW;
+                            else
+                                powerup_type := P_GHOST;
+                            end if;
+                        else
+                            if ((random and "01") = "00") then
+                                powerup_type := P_HEALTH;
+                            else
+                                if ((random and "10") = "10") then
+                                    powerup_type := P_SLOW;
+                                else
+                                    powerup_type := P_GHOST;
+                                end if;
+                            end if;
                         end if;
                         powerup.p_type <= powerup_type;
+
                     end if;
                 end if;
             elsif (state = S_GAME and powerup.active) then

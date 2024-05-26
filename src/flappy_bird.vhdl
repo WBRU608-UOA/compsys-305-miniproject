@@ -11,7 +11,7 @@ entity flappy_bird is
         CLOCK2_50: in std_logic;
         KEY : in std_logic_vector(0 downto 0);
         SW : in std_logic_vector(1 downto 0);
-        LEDR : out std_logic_vector(7 downto 0);
+        LEDR : out std_logic_vector(9 downto 0);
         VGA_HS, VGA_VS : out std_logic;
         VGA_R, VGA_G, VGA_B : out std_logic_vector(3 downto 0);
         PS2_CLK, PS2_DAT : inout std_logic;
@@ -31,7 +31,7 @@ architecture behaviour of flappy_bird is
     signal clock_60Hz : std_logic;
     signal clock_30Hz : std_logic;
 
-    signal health: integer range 0 to 3 :=3;
+    signal health: integer range 0 to 3 := 3;
 
     -- Used to drive 60Hz clock, as we know its period is also 60Hz
     signal vertical_sync : std_logic;
@@ -86,7 +86,8 @@ architecture behaviour of flappy_bird is
             health : in integer;
             powerup : t_powerup;
             move_pixels : integer;
-            training : boolean
+            training : boolean;
+            is_ghost : in boolean
         );
     end component;
 
@@ -185,7 +186,8 @@ begin
         health => health,
         powerup => powerup,
         move_pixels => move_pixels_this_frame,
-        training => training
+        training => training,
+        is_ghost => active_powerup = P_GHOST
     );
 
     mouse: mouse_controller port map (
@@ -257,9 +259,11 @@ begin
                 -- Game start/restart
                 if (left_button = '1' and state = S_INIT) then
                     state <= S_GAME;
+                    powerup_timer <= 0;
                     health <= 3;
                 elsif (left_button = '1' and state = S_DEATH and restart_counter = 0) then
                     state <= S_INIT;
+                    powerup_timer <= 0;
                     health <= 3;
                 end if;
             end if;
@@ -269,11 +273,15 @@ begin
             -- Allow for odd numbers of pixels moved per two frames.
             -- This means we have twice the speeds to select from.
             if (clock_30Hz = '0') then
-                move_pixels_this_frame <= move_pixels / 2;
+                -- If the active powerup is the slow one, half the pixels to move
+                if (active_powerup = P_SLOW and powerup_timer > 0) then
+                    move_pixels_this_frame <= move_pixels / 4;
+                else
+                    move_pixels_this_frame <= move_pixels / 2;
+                end if;
                 move_pixels <= move_pixels / 2 + (move_pixels mod 2);
             else
-                -- If the active powerup is the slow one, half the pixels to move
-                if (active_powerup = P_SLOW) then
+                if (active_powerup = P_SLOW and powerup_timer > 0) then
                     move_pixels_this_frame <= move_pixels / 2;
                 else
                     move_pixels_this_frame <= move_pixels;
@@ -297,13 +305,14 @@ begin
                     health <= 0;
                     state <= S_DEATH;
                     restart_counter <= 30;
-                elsif (collision = C_POWERUP and powerup_timer > 0) then
+                    collide_mem <= true;
+                elsif (collision = C_POWERUP) then
                     -- Powerups
                     active_powerup <= powerup.p_type;
                     should_kill_powerup := true;
-                    if (active_powerup /= P_HEALTH) then
+                    if (powerup.p_type /= P_HEALTH) then
                         powerup_timer <= 300;
-                    elsif (active_powerup = P_HEALTH and health < 3) then
+                    elsif (powerup.p_type = P_HEALTH and health < 3 and not kill_powerup) then
                         health <= health + 1;
                         powerup_timer <= 30;
                     end if;
