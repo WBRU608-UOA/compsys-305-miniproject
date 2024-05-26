@@ -24,9 +24,6 @@ begin
     begin
         if (rising_edge(clock_60Hz)) then
             collision_temp := C_NONE;
-            -- Pipe collision check
-            -- test the ground firstly as if the bird in the pipes and touch the ground, the birl should die
-            -- if not, the collision will detect that the bird is collision of pipe, not ground, then not die
             if (bird_pos.y + 2 * SPRITE_BIRD_HEIGHT >= GROUND_START_Y) then
                 collision_temp := C_GROUND;
             end if;
