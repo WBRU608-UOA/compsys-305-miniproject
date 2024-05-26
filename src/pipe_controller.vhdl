@@ -8,6 +8,7 @@ use work.sprites_pkg.all;
 
 entity pipe_controller is
     port (
+        powerup : in t_powerup;
         state : in t_game_state;
         clock_60Hz : in std_logic;
         pipe_posns : out t_pipe_pos_arr;
@@ -35,6 +36,8 @@ begin
             -- Reset LFSR
             if (state = S_INIT) then
             -- initial x, y
+            -- dont have to initial the pipes the same, we can make them random, but just want to show every time same thing from the beginning. 
+            -- the random is not hard and we have a random controller to control lol.
                 for i in 0 to 2 loop
                     current_pipe_posns(i).x <= SCREEN_CENTRE_X + ((SCREEN_MAX_X + PIPE_WIDTH) / 3) + i * ((SCREEN_MAX_X + PIPE_WIDTH) / 3);
                     current_pipe_posns(i).y <= ((i * 5201314) mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
@@ -49,7 +52,13 @@ begin
                     -- x y generation
                     for i in 0 to 2 loop
                         pipe_pos := current_pipe_posns(i);
-                        new_pipe_x := pipe_pos.x - (2*difficulty);
+                        if (powerup.p_type = 0) then
+                            -- power-up type 0
+                            -- set the power-up speed is 0.8 ratio of current speed
+                            new_pipe_x := pipe_pos.x - (2*difficulty*4/5);
+                        else
+                            new_pipe_x := pipe_pos.x - (2*difficulty);
+                        end if;
                         new_pipe_y := pipe_pos.y;
                         if (new_pipe_x < -PIPE_WIDTH / 2) then
                             new_pipe_x := SCREEN_MAX_X + PIPE_WIDTH / 2;
