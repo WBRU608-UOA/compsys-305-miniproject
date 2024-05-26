@@ -34,14 +34,14 @@ package util_pkg is
     constant BIRD_MAX_VEL : integer := 10;
     constant BIRD_IMPULSE_VEL : integer := -8;
 
-    type t_power_ups is record
+    type t_powerup is record
         x : integer;
         y : integer;
         p_type : integer range 0 to 2;
-        --0- health, 1-slow down, 2- ghost
+        --0- slow, 1- h health, 2- ghost
         active : boolean;
     end record;
-    
+
     
     type t_gen_pos is record
         x : integer;
@@ -64,5 +64,9 @@ package util_pkg is
 
     type t_game_state is (
         S_INIT, S_GAME, S_DEATH
+    );
+
+    type t_collision is (
+        C_NONE, C_PIPE, C_POWERUP
     );
 end package;

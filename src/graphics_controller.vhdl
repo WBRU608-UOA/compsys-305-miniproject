@@ -20,7 +20,8 @@ entity graphics_controller is
         score : in t_score;
         day : in std_logic;
         health : in integer;
-        powerup : t_power_ups
+        powerup : t_powerup;
+        difficulty : integer
     );
 end entity;
 
@@ -478,7 +479,7 @@ begin
             end if;
             background_offset <= bg_offset;
 
-            gr_offset := ground_offset + 2;
+            gr_offset := ground_offset + difficulty;
             if (gr_offset >= 2 * SPRITE_GROUND_WIDTH) then
                 gr_offset := gr_offset - 2 * SPRITE_GROUND_WIDTH;
             end if;

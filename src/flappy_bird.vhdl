@@ -44,12 +44,10 @@ architecture behaviour of flappy_bird is
 
     signal day : std_logic;
 
-    --SM-I added this
-    signal collision_detected : boolean;
+    signal collision : t_collision;
     signal collide_mem : boolean := false;
-    signal coll_type : integer range 0 to 7;
 
-    signal f_power_ups: t_power_ups;
+    signal powerup: t_powerup;
 
     -- random number
     signal rng : integer range 0 to 65535;
@@ -77,7 +75,8 @@ architecture behaviour of flappy_bird is
             score : in t_score;
             day : in std_logic;
             health : in integer;
-            powerup : t_power_ups
+            powerup : t_powerup;
+            difficulty : integer
         );
     end component;
 
@@ -120,11 +119,11 @@ architecture behaviour of flappy_bird is
         );
     end component;
 
-    component power_ups_controller is
+    component powerup_controller is
         port (
             state : in t_game_state;
             clock_60Hz : in std_logic;
-            power_up : out t_power_ups;
+            powerup : out t_powerup;
             rng : in integer;
             pipe_posns: in t_pipe_pos_arr;
             health : in integer
@@ -142,10 +141,9 @@ architecture behaviour of flappy_bird is
         port (
             clock_60Hz : in std_logic;
             bird_pos : in t_bird_pos;
-            power_up: in t_power_ups;
+            powerup: in t_powerup;
             pipe_posns : in t_pipe_pos_arr;
-            collision_type: out integer range 0 to 8 :=0 ;
-            collision : out boolean -- Collision detected
+            collision : out t_collision
         );
     end component;
 
@@ -174,7 +172,8 @@ begin
         score => score,
         day => day,
         health => health,
-        powerup => f_power_ups
+        powerup => powerup,
+        difficulty => difficulty
     );
 
     mouse: mouse_controller port map (
@@ -213,18 +212,18 @@ begin
         rng => rng
     );
 
-    collision : collision_controller port map (
+    collide : collision_controller port map (
         clock_60Hz => clock_60Hz,
         bird_pos => bird_pos,
         pipe_posns => pipe_posns,
-        collision => collision_detected,
-        Collision_type=>coll_type
+        collision => collision,
+        powerup => powerup
     );
 
-    power_ups : power_ups_controller port map (
+    powerups : powerup_controller port map (
         state => state,
         clock_60Hz => clock_60Hz,
-        power_up => f_power_ups,
+        powerup => powerup,
         rng => rng,
         pipe_posns => pipe_posns,
         health => health
@@ -250,17 +249,16 @@ begin
             -- This is done here so that it's vsynced
             day <= not SW(0);
 
-            if (health > 0 and collision_detected and not collide_mem) then 
+            if (health > 0 and collision = C_PIPE and not collide_mem) then 
                 health_temp := health - 1;
                 -- enter the death state
-                if (health_temp = 0 and state = S_GAME and not SW(1)
-                ) then
+                if (health_temp = 0 and state = S_GAME) then
                     state <= S_DEATH;
                     restart_counter <= 30;
                 end if;
                 collide_mem <= true;
                 health <= health_temp;
-            elsif (not collision_detected and collide_mem) then
+            elsif (collision = C_NONE and collide_mem) then
                 collide_mem <= false;
             end if;
 
@@ -273,9 +271,6 @@ begin
 
     VGA_VS <= vertical_sync;
     clock_60Hz <= not vertical_sync;
-
-    LEDR(0) <= '1' when collision_detected else '0';
-    LEDR(1) <= init;
 
     init <= not KEY(0);
 end architecture;
