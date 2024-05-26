@@ -43,6 +43,7 @@ architecture behaviour of flappy_bird is
     signal score : t_score;
 
     signal day : std_logic;
+    signal training : boolean;
 
     signal collision : t_collision;
     signal collide_mem : boolean := false;
@@ -76,7 +77,8 @@ architecture behaviour of flappy_bird is
             day : in std_logic;
             health : in integer;
             powerup : t_powerup;
-            difficulty : integer
+            difficulty : integer;
+            training : boolean
         );
     end component;
 
@@ -126,13 +128,14 @@ architecture behaviour of flappy_bird is
             powerup : out t_powerup;
             rng : in integer;
             pipe_posns: in t_pipe_pos_arr;
-            health : in integer
+            health : in integer;
+            difficulty : in integer
         );
     end component;
 
     component random_generator is
         port (
-            CLOCK2_50 : in std_logic;
+            clock_60Hz : in std_logic;
             rng : out integer range 0 to 65535
         );
     end component;
@@ -173,7 +176,8 @@ begin
         day => day,
         health => health,
         powerup => powerup,
-        difficulty => difficulty
+        difficulty => difficulty,
+        training => training
     );
 
     mouse: mouse_controller port map (
@@ -208,7 +212,7 @@ begin
     );
 
     random : random_generator port map (
-        CLOCK2_50 => CLOCK2_50,
+        clock_60Hz => clock_60Hz,
         rng => rng
     );
 
@@ -226,9 +230,9 @@ begin
         powerup => powerup,
         rng => rng,
         pipe_posns => pipe_posns,
-        health => health
+        health => health,
+        difficulty => difficulty
     );
-
 
     state_machine : process (clock_60Hz)
         variable health_temp : integer;
@@ -238,6 +242,7 @@ begin
                 state <= S_INIT;
                 health <= 3;
             else
+                -- Game start/restart
                 if (left_button = '1' and state = S_INIT) then
                     state <= S_GAME;
                     health <= 3;
@@ -249,10 +254,11 @@ begin
             -- This is done here so that it's vsynced
             day <= not SW(0);
 
-            if (health > 0 and collision = C_PIPE and not collide_mem) then 
+            -- Collision
+            if (state = S_GAME and health > 0 and collision = C_PIPE and not collide_mem) then 
                 health_temp := health - 1;
-                -- enter the death state
-                if (health_temp = 0 and state = S_GAME) then
+                -- Player is dead
+                if (health_temp = 0 and not training) then
                     state <= S_DEATH;
                     restart_counter <= 30;
                 end if;
@@ -262,10 +268,26 @@ begin
                 collide_mem <= false;
             end if;
 
-            -- restart counter like (1s) from the death state to the game state
-            if (state = S_DEATH and restart_counter > 0) then
+            -- Decrement the restart counter
+            if (restart_counter > 0) then
                 restart_counter <= restart_counter - 1;
             end if;
+
+            -- Training mode toggle
+            if (SW(1) = '1' and not training) then
+                training <= true;
+                if (state = S_GAME) then
+                    STATE <= S_INIT;
+                    health <= 3;
+                end if;
+            elsif (SW(1) = '0' and training) then
+                training <= false;
+                if (state = S_GAME) then
+                    STATE <= S_INIT;
+                    health <= 3;
+                end if;
+            end if;
+
         end if;
     end process;
 

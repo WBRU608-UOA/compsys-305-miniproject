@@ -54,8 +54,8 @@ package util_pkg is
     end record;
 
     type t_pipe_pos is record
-        x : integer range -PIPE_WIDTH / 2 to SCREEN_MAX_X + PIPE_WIDTH / 2 + SCREEN_MAX_X; -- Temp lots of blanking space
-        y : integer range 29 to PIPE_MAX_Y;
+        x : integer range -PIPE_WIDTH / 2 to 2 * SCREEN_MAX_X; -- Large space to the right for initial pipe positions
+        y : integer range PIPE_MIN_Y to PIPE_MAX_Y;
     end record;
     
     type t_pipe_pos_arr is array (0 to 2) of t_pipe_pos;

@@ -49,7 +49,7 @@ begin
                     -- x y generation
                     for i in 0 to 2 loop
                         pipe_pos := current_pipe_posns(i);
-                        new_pipe_x := pipe_pos.x - (2*difficulty);
+                        new_pipe_x := pipe_pos.x - (2 * difficulty);
                         new_pipe_y := pipe_pos.y;
                         if (new_pipe_x < -PIPE_WIDTH / 2) then
                             new_pipe_x := SCREEN_MAX_X + PIPE_WIDTH / 2;

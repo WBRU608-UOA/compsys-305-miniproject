@@ -24,6 +24,7 @@ begin
     begin
         if (rising_edge(clock_60Hz)) then
             collision_temp := C_NONE;
+            -- Pipe collision check
             for i in 0 to 2 loop
                 if (
                     bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > pipe_posns(i).x - PIPE_WIDTH / 2 
@@ -33,12 +34,16 @@ begin
                     collision_temp := C_PIPE;
                 end if;
             end loop;
-            if (
-                bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > powerup.x 
-                and bird_pos.x < powerup.x + (POWERUP_SIZE)
-                and bird_pos.y + (SPRITE_BIRD_HEIGHT * 2) >= powerup.y and bird_pos.y < powerup.y + POWERUP_SIZE
-            ) then 
-                collision_temp := C_POWERUP;    
+            -- Powerup collision check
+            if (collision_temp = C_NONE and powerup.active) then
+                if (
+                    bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > powerup.x 
+                    and bird_pos.x < powerup.x + (POWERUP_SIZE)
+                    and bird_pos.y + (SPRITE_BIRD_HEIGHT * 2) >= powerup.y
+                    and bird_pos.y < powerup.y + POWERUP_SIZE
+                ) then 
+                    collision_temp := C_POWERUP;
+                end if;
             end if;
             collision <= collision_temp;
         end if;

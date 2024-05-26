@@ -20,8 +20,9 @@ entity graphics_controller is
         score : in t_score;
         day : in std_logic;
         health : in integer;
-        powerup : t_powerup;
-        difficulty : integer
+        powerup : in t_powerup;
+        difficulty : in integer;
+        training : in boolean
     );
 end entity;
 
@@ -167,6 +168,7 @@ begin
         variable current_pixel_computed : std_logic_vector(11 downto 0);
 
         variable screen_centre_string : string(1 to 16);
+        constant training_string : string(1 to 13) := "TRAINING MODE";
         variable char : character;
 
         variable pipe_pos : t_pipe_pos;
@@ -412,6 +414,24 @@ begin
                     end if;
                 end if;
 
+                -- Draw training mode text
+                if (training) then
+                    x_start := SCREEN_MAX_X - training_string'length * 2 * TEXT_CHAR_SIZE - 25;
+                    x_end := SCREEN_MAX_X - 25;
+                    if (x >= x_start and x <= x_end and y >= 25 and y < 2 * TEXT_CHAR_SIZE + 25) then
+                        dX := (x - x_start) / 2;
+                        dY := (y - 25) / 2;
+                        char := training_string(dX / TEXT_CHAR_SIZE + 1);
+                        char_row <= std_logic_vector(to_unsigned(dY, 3));
+                        char_col <= std_logic_vector(to_unsigned(dX, 3));
+                        char_addr <= std_logic_vector(to_unsigned(character'pos(char), 7));
+                        text_colour <= x"fff";
+                        if (dX > 0) then
+                            render_text := true;
+                        end if;
+                    end if;
+                end if;
+
                 -- Draw health (technically text, stored in the font sheet)
                 if (x >= health_pos.x and x < 3 * 4 * TEXT_CHAR_SIZE + health_pos.x and y >= health_pos.y and y < 4 * TEXT_CHAR_SIZE + health_pos.y) then
                     dX := (x - health_pos.x) / 4;
@@ -479,7 +499,7 @@ begin
             end if;
             background_offset <= bg_offset;
 
-            gr_offset := ground_offset + difficulty;
+            gr_offset := ground_offset + 2 * difficulty;
             if (gr_offset >= 2 * SPRITE_GROUND_WIDTH) then
                 gr_offset := gr_offset - 2 * SPRITE_GROUND_WIDTH;
             end if;
