@@ -39,7 +39,7 @@ begin
                 -- set this one to fix bugs that in the initial state, the pipe y position will be assigned once.
                 initial_pipe <= false;
 
-                -- initial x, y
+                -- initial random x, y
                 for i in 0 to 2 loop
                     current_pipe_posns(i).x <= SCREEN_CENTRE_X + ((SCREEN_MAX_X + PIPE_WIDTH) / 3) + i * ((SCREEN_MAX_X + PIPE_WIDTH) / 3);
                     current_pipe_posns(i).y <= ((random_y + 5201314 * i) mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
