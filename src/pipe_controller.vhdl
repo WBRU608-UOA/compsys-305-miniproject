@@ -19,7 +19,7 @@ end entity;
 architecture behaviour of pipe_controller is
 
 signal current_pipe_posns : t_pipe_pos_arr;
-signal initial_pipe : integer := 0;
+signal initial_pipe : boolean := true;
 
 begin
     process (clock_60Hz)
@@ -35,21 +35,21 @@ begin
             random_y := (rng mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
 
             -- State Initial
-            if (state = S_INIT and initial_pipe < 3) then
+            if (state = S_INIT and initial_pipe) then
                 -- set this one to fix bugs that in the initial state, the pipe y position will be assigned once.
-                initial_pipe <= initial_pipe + 1;
+                initial_pipe <= false;
 
                 -- initial x, y
                 for i in 0 to 2 loop
                     current_pipe_posns(i).x <= SCREEN_CENTRE_X + ((SCREEN_MAX_X + PIPE_WIDTH) / 3) + i * ((SCREEN_MAX_X + PIPE_WIDTH) / 3);
-                    current_pipe_posns(i).y <= random_y;
+                    current_pipe_posns(i).y <= ((random_y + 5201314 * i) mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
                 end loop;
 
             -- State Game
             else
                 if (state = S_GAME) then
                     -- set this one to fix bugs that in the initial state, the pipe y position will be assigned once.
-                    initial_pipe <= 0;
+                    initial_pipe <= true;
                     -- x y generation
                     for i in 0 to 2 loop
                         pipe_pos := current_pipe_posns(i);

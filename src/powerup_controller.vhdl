@@ -43,7 +43,7 @@ begin
                         powerup.x <= SCREEN_MAX_X;
                         powerup.y <= 112 + (rng mod 256);
 
-                        random := std_logic_vector(to_unsigned(rng, 2));
+                        random := std_logic_vector(to_unsigned((rng mod 5), 2));
 
                         if (health = 3) then
                             if ((random and "01") = "00") then
