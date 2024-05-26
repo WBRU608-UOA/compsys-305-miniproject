@@ -19,6 +19,7 @@ end entity;
 architecture behaviour of pipe_controller is
 
 signal current_pipe_posns : t_pipe_pos_arr;
+signal initial_pipe : integer := 0;
 
 begin
     process (clock_60Hz)
@@ -30,24 +31,25 @@ begin
 	
 	 
         if (rising_edge(clock_60Hz)) then
+            -- Generate random y within specified ranges
+            random_y := (rng mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
 
             -- State Initial
-            -- Reset LFSR
-            if (state = S_INIT) then
-            -- initial x, y
-            -- dont have to initial the pipes the same, we can make them random, but just want to show every time same thing from the beginning. 
-            -- the random is not hard and we have a random controller to control lol.
+            if (state = S_INIT and initial_pipe < 3) then
+                -- set this one to fix bugs that in the initial state, the pipe y position will be assigned once.
+                initial_pipe <= initial_pipe + 1;
+
+                -- initial x, y
                 for i in 0 to 2 loop
                     current_pipe_posns(i).x <= SCREEN_CENTRE_X + ((SCREEN_MAX_X + PIPE_WIDTH) / 3) + i * ((SCREEN_MAX_X + PIPE_WIDTH) / 3);
-                    current_pipe_posns(i).y <= ((i * 5201314) mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
+                    current_pipe_posns(i).y <= random_y;
                 end loop;
-            
+
             -- State Game
             else
                 if (state = S_GAME) then
-                    -- Generate random y within specified ranges
-                    random_y := (rng mod (PIPE_MAX_Y - PIPE_MIN_Y)) + PIPE_MIN_Y;
-
+                    -- set this one to fix bugs that in the initial state, the pipe y position will be assigned once.
+                    initial_pipe <= 0;
                     -- x y generation
                     for i in 0 to 2 loop
                         pipe_pos := current_pipe_posns(i);
