@@ -24,6 +24,9 @@ begin
     begin
         if (rising_edge(clock_60Hz)) then
             collision_temp := C_NONE;
+            if (bird_pos.y + 2 * SPRITE_BIRD_HEIGHT > GROUND_START_Y) then
+                collision_temp := C_GROUND;
+            end if;
             -- Pipe collision check
             for i in 0 to 2 loop
                 if (

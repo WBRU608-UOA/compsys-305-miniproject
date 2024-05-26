@@ -29,6 +29,7 @@ architecture behaviour of flappy_bird is
 
     -- Goes high at 60Hz, but spends most of the time at low - use this for rising edge detection only!
     signal clock_60Hz : std_logic;
+    signal clock_30Hz : std_logic;
 
     signal health: integer range 0 to 3 :=3;
 
@@ -49,6 +50,8 @@ architecture behaviour of flappy_bird is
     signal collide_mem : boolean := false;
 
     signal powerup: t_powerup;
+    -- Because we can't drive with more than one process
+    signal kill_powerup : boolean;
 
     -- random number
     signal rng : integer range 0 to 65535;
@@ -59,6 +62,11 @@ architecture behaviour of flappy_bird is
     -- difficulty set
     -- level of difficulty: original speed * difficulty
     signal difficulty: integer;
+
+    signal active_powerup : integer range 0 to 2 := 0;
+
+    signal move_pixels_this_frame : integer;
+    signal move_pixels : integer;
 
     component BCD_to_SevenSeg is
         port (BCD_digit : in std_logic_vector(3 downto 0);
@@ -77,7 +85,7 @@ architecture behaviour of flappy_bird is
             day : in std_logic;
             health : in integer;
             powerup : t_powerup;
-            difficulty : integer;
+            move_pixels : integer;
             training : boolean
         );
     end component;
@@ -113,12 +121,12 @@ architecture behaviour of flappy_bird is
 
     component pipe_controller is
         port (
-            powerup : in t_powerup;
+            slowed : in boolean;
             state : in t_game_state;
             clock_60Hz : in std_logic;
             pipe_posns : out t_pipe_pos_arr;
             rng : in integer;
-            difficulty : in integer
+            move_pixels : in integer
         );
     end component;
 
@@ -130,7 +138,8 @@ architecture behaviour of flappy_bird is
             rng : in integer;
             pipe_posns: in t_pipe_pos_arr;
             health : in integer;
-            difficulty : in integer
+            move_pixels : in integer;
+            kill_powerup : in boolean
         );
     end component;
 
@@ -177,7 +186,7 @@ begin
         day => day,
         health => health,
         powerup => powerup,
-        difficulty => difficulty,
+        move_pixels => move_pixels,
         training => training
     );
 
@@ -205,12 +214,12 @@ begin
     );
 
     pipe : pipe_controller port map (
-        powerup => powerup,
+        slowed => active_powerup = 1,
         state => state,
         clock_60Hz => clock_60Hz,
         pipe_posns => pipe_posns,
         rng => rng,
-        difficulty => difficulty
+        move_pixels => move_pixels
     );
 
     random : random_generator port map (
@@ -233,13 +242,18 @@ begin
         rng => rng,
         pipe_posns => pipe_posns,
         health => health,
-        difficulty => difficulty
+        move_pixels => move_pixels,
+        kill_powerup => kill_powerup
     );
 
     state_machine : process (clock_60Hz)
         variable health_temp : integer;
+        variable should_kill_powerup : boolean;
+        variable move_pixels_temp : integer;
     begin
         if (rising_edge(clock_60Hz)) then
+            clock_30Hz <= not clock_30Hz;
+
             if (init = '1') then
                 state <= S_INIT;
                 health <= 3;
@@ -256,26 +270,44 @@ begin
             -- This is done here so that it's vsynced
             day <= not SW(0);
 
-            -- power-up style 2
-            if (powerup.p_type /= 2) then
-                if (state = S_GAME and health > 0 and collision = C_PIPE and not collide_mem) then 
+            move_pixels_temp := move_pixels;
+            if (clock_30Hz = '0') then
+                move_pixels_this_frame <= move_pixels_temp / 2;
+                move_pixels_temp := move_pixels_temp / 2 + (move_pixels mod 2);
+            else
+                move_pixels_this_frame <= move_pixels_temp;
+                move_pixels_temp := 3 + difficulty;
+            end if;
+            move_pixels <= move_pixels_temp;
+
+            should_kill_powerup := false;
+
+            if (state = S_GAME and health > 0 and not collide_mem and active_powerup /= 2) then 
+                if (collision = C_PIPE) then
                     health_temp := health - 1;
                     -- enter the death state
-                    if (health_temp = 0 and state = S_GAME) then
+                    if (health_temp = 0 and state = S_GAME and not training) then
                         state <= S_DEATH;
                         restart_counter <= 30;
                     end if;
                     collide_mem <= true;
                     health <= health_temp;
-                elsif (collision = C_NONE and collide_mem) then
-                    collide_mem <= false;
+                elsif (collision = C_GROUND and active_powerup /= 2 and not training) then
+                    health <= 0;
+                    state <= S_DEATH;
+                    restart_counter <= 30;
+                elsif (collision = C_POWERUP) then
+                    active_powerup <= powerup.p_type;
+                    should_kill_powerup := true;
+                    if (active_powerup = 0 and health < 3) then
+                        health <= health + 1;
+                    end if;
                 end if;
+            elsif (collision = C_NONE and collide_mem) then
+                collide_mem <= false;
             end if;
-
-            -- power-up type 1
-            if (health < 3 and state = S_GAME and powerup.p_type = 1) then
-                health <= health + 1;
-            end if;
+            
+            kill_powerup <= should_kill_powerup;
 
             -- Decrement the restart counter
             if (restart_counter > 0) then

@@ -14,7 +14,8 @@ entity powerup_controller is
         rng : in integer;
         pipe_posns: in t_pipe_pos_arr;
         health : in integer;
-        difficulty : in integer
+        move_pixels : in integer;
+        kill_powerup : in boolean
     );
 end entity;
 
@@ -41,15 +42,15 @@ begin
                         powerup.x <= SCREEN_MAX_X;
                         powerup.y <= 112 + (rng mod 256);
                         powerup_type := (rng mod 4);
-                        if (powerup_type = 1 and health = 3) then
-                            powerup_type := 0;
+                        if (powerup_type = 0 and health = 3) then
+                            powerup_type := 1;
                         end if;
                         powerup.p_type <= powerup_type;
                     end if;
                 end if;
             elsif (state = S_GAME and powerup.active) then
-                powerup_x := powerup.x - 2 * difficulty;
-                if (powerup_x < -POWERUP_SIZE) then
+                powerup_x := powerup.x - move_pixels;
+                if (powerup_x < -POWERUP_SIZE or kill_powerup) then
                     powerup.active <= false;
                 end if;
                 powerup.x <= powerup_x;

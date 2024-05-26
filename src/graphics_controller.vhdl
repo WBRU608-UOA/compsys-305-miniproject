@@ -21,7 +21,7 @@ entity graphics_controller is
         day : in std_logic;
         health : in integer;
         powerup : in t_powerup;
-        difficulty : in integer;
+        move_pixels : in integer;
         training : in boolean
     );
 end entity;
@@ -344,8 +344,8 @@ begin
                     dX := x - powerup.x;
                     dY := y - powerup.y;
                     case powerup.p_type is
-                        when 0 => powerup_sprite_offset := SPRITE_POWERUP_SLOW_OFFSET;
-                        when 1 => powerup_sprite_offset := SPRITE_POWERUP_HEALTH_OFFSET;
+                        when 0 => powerup_sprite_offset := SPRITE_POWERUP_HEALTH_OFFSET;
+                        when 1 => powerup_sprite_offset := SPRITE_POWERUP_SLOW_OFFSET;
                         when 2 => powerup_sprite_offset := SPRITE_POWERUP_GHOST_OFFSET;
                     end case;
                     rom_address_a <= std_logic_vector(to_unsigned(powerup_sprite_offset + (dY / 2) * (POWERUP_SIZE / 2) + (dX / 2), ADDRESS_WIDTH));
@@ -493,13 +493,13 @@ begin
         variable bg_offset, gr_offset: integer;
     begin
         if (rising_edge(clock_60Hz) and STATE = S_GAME ) then
-            bg_offset := background_offset + 1;
+            bg_offset := background_offset + (move_pixels / 2);
             if (bg_offset >= BACKGROUND_WIDTH) then
                 bg_offset := bg_offset - BACKGROUND_WIDTH;
             end if;
             background_offset <= bg_offset;
 
-            gr_offset := ground_offset + 2 * difficulty;
+            gr_offset := ground_offset + move_pixels;
             if (gr_offset >= 2 * SPRITE_GROUND_WIDTH) then
                 gr_offset := gr_offset - 2 * SPRITE_GROUND_WIDTH;
             end if;

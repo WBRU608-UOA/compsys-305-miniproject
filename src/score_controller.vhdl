@@ -58,7 +58,7 @@ begin
                 old_pipes(i) <= pipes(i);
             end loop;
             -- each difficulty should be 10 scores a level (at least level 1)
-            difficulty := score(2) * 10 + score(1) + 1;
+            difficulty <= score(2) * 10 + score(1) + 1;
         end if;
     end process;
 

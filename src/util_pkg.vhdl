@@ -37,8 +37,8 @@ package util_pkg is
     type t_powerup is record
         x : integer;
         y : integer;
+        --0 - Health, 1 - Pipes slow down, 2 - No collision with pipes
         p_type : integer range 0 to 2;
-        --0- slow, 1- h health, 2- ghost
         active : boolean;
     end record;
 
@@ -67,6 +67,6 @@ package util_pkg is
     );
 
     type t_collision is (
-        C_NONE, C_PIPE, C_POWERUP
+        C_NONE, C_PIPE, C_POWERUP, C_GROUND
     );
 end package;
