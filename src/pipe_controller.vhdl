@@ -8,7 +8,6 @@ use work.sprites_pkg.all;
 
 entity pipe_controller is
     port (
-        slowed : in boolean;
         state : in t_game_state;
         clock_60Hz : in std_logic;
         pipe_posns : out t_pipe_pos_arr;
@@ -52,13 +51,7 @@ begin
                     -- x y generation
                     for i in 0 to 2 loop
                         pipe_pos := current_pipe_posns(i);
-                        if (slowed) then
-                            -- power-up type 0
-                            -- set the power-up speed is 0.8 ratio of current speed
-                            new_pipe_x := pipe_pos.x - (move_pixels * 4) / 5;
-                        else
-                            new_pipe_x := pipe_pos.x - move_pixels;
-                        end if;
+                        new_pipe_x := pipe_pos.x - move_pixels;
                         new_pipe_y := pipe_pos.y;
                         if (new_pipe_x < -PIPE_WIDTH / 2) then
                             new_pipe_x := SCREEN_MAX_X + PIPE_WIDTH / 2;

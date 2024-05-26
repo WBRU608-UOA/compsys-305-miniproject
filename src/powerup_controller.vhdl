@@ -23,7 +23,7 @@ architecture behaviour of powerup_controller is
 begin
     process (clock_60Hz)
         variable powerup_x : integer;
-        variable powerup_type : integer;
+        variable powerup_type : t_powerup_type;
         variable can_spawn_powerup : boolean;
     begin	 
         if (rising_edge(clock_60Hz)) then
@@ -33,7 +33,7 @@ begin
                 if (rng mod 64 = 0) then
                     can_spawn_powerup := true;
                     for i in 0 to 2 loop
-                        if pipe_posns(i).x > 630 then
+                        if pipe_posns(i).x > 600 then
                             can_spawn_powerup := false;
                         end if;
                     end loop;
@@ -41,9 +41,10 @@ begin
                         powerup.active <= true;
                         powerup.x <= SCREEN_MAX_X;
                         powerup.y <= 112 + (rng mod 256);
-                        powerup_type := (rng mod 4);
-                        if (powerup_type = 0 and health = 3) then
-                            powerup_type := 1;
+                        -- Chained mods on this 16-bit value guides the compiler into doing an AND then a simple lookup
+                        powerup_type := t_powerup_type'val((rng mod 4) mod 3);
+                        if (powerup_type = P_HEALTH and health = 3) then
+                            powerup_type := t_powerup_type'val(1 + rng mod 2);
                         end if;
                         powerup.p_type <= powerup_type;
                     end if;

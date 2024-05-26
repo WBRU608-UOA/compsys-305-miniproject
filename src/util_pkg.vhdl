@@ -15,7 +15,7 @@ package util_pkg is
 
     constant STARS_START_Y : integer := 150;
 
-    constant PIPE_GAP_RADIUS : integer := 64;
+    constant PIPE_GAP_RADIUS : integer := 70;
 
     constant POWERUP_SIZE : integer := 24;
 
@@ -34,15 +34,18 @@ package util_pkg is
     constant BIRD_MAX_VEL : integer := 10;
     constant BIRD_IMPULSE_VEL : integer := -8;
 
+    type t_powerup_type is (
+        P_HEALTH, P_SLOW, P_GHOST
+    );
+
     type t_powerup is record
         x : integer;
         y : integer;
         --0 - Health, 1 - Pipes slow down, 2 - No collision with pipes
-        p_type : integer range 0 to 2;
+        p_type : t_powerup_type;
         active : boolean;
     end record;
 
-    
     type t_gen_pos is record
         x : integer;
         y : integer;
