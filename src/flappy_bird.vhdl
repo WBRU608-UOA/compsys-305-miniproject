@@ -288,14 +288,14 @@ begin
                     -- enter the death state
                     if (health_temp = 0 and state = S_GAME and not training) then
                         state <= S_DEATH;
-                        restart_counter <= 30;
+                        restart_counter <= 60;
                     end if;
                     collide_mem <= true;
                     health <= health_temp;
                 elsif (collision = C_GROUND and active_powerup /= 2 and not training) then
                     health <= 0;
                     state <= S_DEATH;
-                    restart_counter <= 30;
+                    restart_counter <= 60;
                 elsif (collision = C_POWERUP) then
                     active_powerup <= powerup.p_type;
                     should_kill_powerup := true;
@@ -303,7 +303,7 @@ begin
                         health <= health + 1;
                     end if;
                 end if;
-            elsif (collision = C_NONE and collide_mem) then
+            elsif (collision = C_NONE and collide_mem and state /= S_DEATH) then
                 collide_mem <= false;
             end if;
             
