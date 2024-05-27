@@ -12,7 +12,8 @@ entity collision_controller is
         bird_pos : in t_bird_pos;
         powerup: in t_powerup;
         pipe_posns : in t_pipe_pos_arr;
-        collision : out t_collision
+        collision : out t_collision;
+        active_powerup : in t_powerup_type
     );
 end entity;
 
@@ -21,21 +22,31 @@ begin
     process (clock_60Hz)
         variable collision_temp : t_collision;
         variable curr_pipe : t_pipe_pos;
+        variable current_pipe_gap : integer;
     begin
         if (rising_edge(clock_60Hz)) then
             collision_temp := C_NONE;
-            if (bird_pos.y + 2 * SPRITE_BIRD_HEIGHT >= GROUND_START_Y) then
-                collision_temp := C_GROUND;
+            if (active_powerup = P_SPRING) then
+                current_pipe_gap := PIPE_GAP_RADIUS + 10;
+            else
+                current_pipe_gap := PIPE_GAP_RADIUS;
             end if;
+
             for i in 0 to 2 loop
                 if (
                     bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > pipe_posns(i).x - PIPE_WIDTH / 2 
                     and bird_pos.x < pipe_posns(i).x + PIPE_WIDTH / 2 
-                    and (bird_pos.y + (SPRITE_BIRD_HEIGHT * 2) >= (pipe_posns(i).y + PIPE_GAP_RADIUS) or bird_pos.y <= pipe_posns(i).y - PIPE_GAP_RADIUS)
+                    and (bird_pos.y + (SPRITE_BIRD_HEIGHT * 2) >= (pipe_posns(i).y + current_pipe_gap) or bird_pos.y <= pipe_posns(i).y - current_pipe_gap)
                 ) then 
                     collision_temp := C_PIPE;
                 end if;
             end loop;
+
+            -- Ground collisions come after as they take priority
+            if (bird_pos.y + 2 * SPRITE_BIRD_HEIGHT >= GROUND_START_Y) then
+                collision_temp := C_GROUND;
+            end if;
+
             -- Powerup collision check
             if (collision_temp = C_NONE and powerup.active) then
                 if (

@@ -35,7 +35,7 @@ package util_pkg is
     constant BIRD_IMPULSE_VEL : integer := -8;
 
     type t_powerup_type is (
-        P_HEALTH, P_SLOW, P_GHOST
+        P_HEALTH, P_SLOW, P_GHOST, P_SPRING
     );
 
     type t_powerup is record

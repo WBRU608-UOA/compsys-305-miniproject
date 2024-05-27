@@ -9,7 +9,7 @@ use work.sprites_pkg.all;
 entity flappy_bird is
     port (
         CLOCK2_50: in std_logic;
-        KEY : in std_logic_vector(0 downto 0);
+        KEY : in std_logic_vector(1 downto 0);
         SW : in std_logic_vector(1 downto 0);
         LEDR : out std_logic_vector(9 downto 0);
         VGA_HS, VGA_VS : out std_logic;
@@ -41,6 +41,8 @@ architecture behaviour of flappy_bird is
 
     signal init : std_logic;
 
+    signal paused : boolean;
+
     signal score : t_score;
 
     signal day : std_logic;
@@ -52,7 +54,7 @@ architecture behaviour of flappy_bird is
     signal powerup: t_powerup;
     -- Because we can't drive with more than one process
     signal kill_powerup : boolean;
-    signal active_powerup : t_powerup_type;
+    signal active_powerup : t_powerup_type := P_HEALTH;
     signal powerup_timer : integer range 0 to 300 := 0;
 
     -- random number
@@ -87,7 +89,8 @@ architecture behaviour of flappy_bird is
             powerup : t_powerup;
             move_pixels : integer;
             training : boolean;
-            is_ghost : in boolean
+            active_powerup : in t_powerup_type;
+            paused : in boolean
         );
     end component;
 
@@ -156,9 +159,18 @@ architecture behaviour of flappy_bird is
             bird_pos : in t_bird_pos;
             powerup: in t_powerup;
             pipe_posns : in t_pipe_pos_arr;
-            collision : out t_collision
+            collision : out t_collision;
+            active_powerup : in t_powerup_type
         );
     end component;
+
+    procedure initialise is
+    begin
+        state <= S_INIT;
+        health <= 3;
+        active_powerup <= P_HEALTH;
+        powerup_timer <= 0;
+    end procedure;
 
 begin
     score_hundreds : BCD_to_SevenSeg port map (
@@ -187,7 +199,8 @@ begin
         powerup => powerup,
         move_pixels => move_pixels_this_frame,
         training => training,
-        is_ghost => active_powerup = P_GHOST
+        active_powerup => active_powerup,
+        paused => paused
     );
 
     mouse: mouse_controller port map (
@@ -231,7 +244,8 @@ begin
         bird_pos => bird_pos,
         pipe_posns => pipe_posns,
         collision => collision,
-        powerup => powerup
+        powerup => powerup,
+        active_powerup => active_powerup
     );
 
     powerups : powerup_controller port map (
@@ -248,41 +262,39 @@ begin
     state_machine : process (clock_60Hz)
         variable health_temp : integer;
         variable should_kill_powerup : boolean;
+        variable move_pixels_scaled : integer;
+        variable powerup_timer_temp : integer;
     begin
         if (rising_edge(clock_60Hz)) then
             clock_30Hz <= not clock_30Hz;
 
             if (init = '1') then
-                state <= S_INIT;
-                health <= 3;
+                initialise;
             else
                 -- Game start/restart
                 if (left_button = '1' and state = S_INIT) then
                     state <= S_GAME;
-                    powerup_timer <= 0;
-                    health <= 3;
                 elsif (left_button = '1' and state = S_DEATH and restart_counter = 0) then
-                    state <= S_INIT;
-                    powerup_timer <= 0;
-                    health <= 3;
+                    initialise;
                 end if;
             end if;
             -- This is done here so that it's vsynced
             day <= not SW(0);
 
+            move_pixels_scaled := (move_pixels / 2) + (move_pixels / 4);
             -- Allow for odd numbers of pixels moved per two frames.
             -- This means we have twice the speeds to select from.
             if (clock_30Hz = '0') then
-                -- If the active powerup is the slow one, half the pixels to move
+                -- If the active powerup is the slow one, the speed should be 4/5ths
                 if (active_powerup = P_SLOW and powerup_timer > 0) then
-                    move_pixels_this_frame <= move_pixels / 4;
+                    move_pixels_this_frame <= move_pixels_scaled / 2;
                 else
                     move_pixels_this_frame <= move_pixels / 2;
                 end if;
                 move_pixels <= move_pixels / 2 + (move_pixels mod 2);
             else
                 if (active_powerup = P_SLOW and powerup_timer > 0) then
-                    move_pixels_this_frame <= move_pixels / 2;
+                    move_pixels_this_frame <= move_pixels_scaled;
                 else
                     move_pixels_this_frame <= move_pixels;
                 end if;
@@ -290,31 +302,34 @@ begin
             end if;
 
             should_kill_powerup := false;
+            powerup_timer_temp := powerup_timer;
 
-            if (state = S_GAME and health > 0 and not collide_mem) then 
+            -- Handle collisions
+            -- Collision with the ground
+            if (state = S_GAME and collision = C_GROUND and active_powerup /= P_GHOST and not training) then
+                health <= 0;
+                state <= S_DEATH;
+                restart_counter <= 30;
+            elsif (state = S_GAME and health > 0 and not collide_mem) then 
+                -- Collision with pipe
                 if (collision = C_PIPE and active_powerup /= P_GHOST) then
                     health_temp := health - 1;
                     -- enter the death state
                     if (health_temp = 0 and state = S_GAME and not training) then
                         state <= S_DEATH;
-                        restart_counter <= 60;
+                        restart_counter <= 30;
                     end if;
                     collide_mem <= true;
                     health <= health_temp;
-                elsif (collision = C_GROUND and active_powerup /= P_GHOST and not training) then
-                    health <= 0;
-                    state <= S_DEATH;
-                    restart_counter <= 30;
-                    collide_mem <= true;
+                -- Collision with powerup
                 elsif (collision = C_POWERUP) then
-                    -- Powerups
                     active_powerup <= powerup.p_type;
                     should_kill_powerup := true;
                     if (powerup.p_type /= P_HEALTH) then
-                        powerup_timer <= 300;
+                        powerup_timer_temp := 300;
                     elsif (powerup.p_type = P_HEALTH and health < 3 and not kill_powerup) then
                         health <= health + 1;
-                        powerup_timer <= 30;
+                        powerup_timer_temp := 30;
                     end if;
                 end if;
             elsif (collision = C_NONE and collide_mem and state /= S_DEATH) then
@@ -329,12 +344,14 @@ begin
             end if;
 
             -- Decrement the powerup timer
-            if (powerup_timer > 0) then
-                powerup_timer <= powerup_timer - 1;
+            if (powerup_timer_temp > 0) then
+                powerup_timer_temp := powerup_timer - 1;
             elsif (powerup_timer = 0) then
                 -- P_HEALTH has no effect as an active powerup
                 active_powerup <= P_HEALTH;
             end if;
+
+            powerup_timer <= powerup_timer_temp;
 
             -- Training mode toggle
             if (SW(1) = '1' and not training) then
@@ -350,12 +367,19 @@ begin
                     health <= 3;
                 end if;
             end if;
+        end if;
+    end process;
 
+    pause_handler : process(KEY(1))
+    begin
+        -- Falling edge because the buttons are active low (probably a pulldown resistor)
+        if (falling_edge(KEY(1))) then
+            paused <= not paused;
         end if;
     end process;
 
     VGA_VS <= vertical_sync;
-    clock_60Hz <= not vertical_sync;
+    clock_60Hz <= clock_60Hz when paused else not vertical_sync;
 
     init <= not KEY(0);
 end architecture;

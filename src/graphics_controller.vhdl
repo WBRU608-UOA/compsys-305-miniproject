@@ -23,7 +23,8 @@ entity graphics_controller is
         powerup : in t_powerup;
         move_pixels : in integer;
         training : in boolean;
-        is_ghost : in boolean
+        active_powerup : in t_powerup_type;
+        paused : in boolean
     );
 end entity;
 
@@ -166,6 +167,8 @@ begin
         variable y : integer range 0 to SCREEN_MAX_Y;
         variable dX, dY : integer;
 
+        variable current_pipe_gap : integer;
+
         variable current_pixel_computed : std_logic_vector(11 downto 0);
 
         variable screen_centre_string : string(1 to 16);
@@ -220,7 +223,7 @@ begin
 
             -- Animate the bird
             if (state = S_GAME) then
-                if (is_ghost) then
+                if (active_powerup = P_GHOST) then
                     bird_sprite_offset := SPRITE_BIRD_GHOST_OFFSET;
                 elsif ((counter_60Hz mod 32) < 11) then
                     bird_sprite_offset := SPRITE_BIRD_3_OFFSET;
@@ -271,15 +274,21 @@ begin
                     end if;
                 end if;
 
+                if (active_powerup = P_SPRING) then
+                    current_pipe_gap := PIPE_GAP_RADIUS + 10;
+                else
+                    current_pipe_gap := PIPE_GAP_RADIUS;
+                end if;
+
                 -- Draw pipes
                 for i in 0 to 2 loop
                     pipe_pos := pipe_posns(i);
                     -- Check the current pixel is within the pipe horizontally and not inside the gap
-                    if (x >= pipe_pos.x - PIPE_WIDTH / 2 and x <= pipe_pos.x + PIPE_WIDTH / 2 and y < GROUND_START_Y and (y < pipe_pos.y - PIPE_GAP_RADIUS or y >= pipe_pos.y + PIPE_GAP_RADIUS)) then
+                    if (x >= pipe_pos.x - PIPE_WIDTH / 2 and x <= pipe_pos.x + PIPE_WIDTH / 2 and y < GROUND_START_Y and (y < pipe_pos.y - current_pipe_gap or y >= pipe_pos.y + current_pipe_gap)) then
                         dY := y - pipe_pos.y;
 
                         -- Check if the pixel is in the body of the pipe
-                        if (dY < -PIPE_GAP_RADIUS - 2 * SPRITE_PIPE_HEAD_HEIGHT or dY >= PIPE_GAP_RADIUS + 2 * SPRITE_PIPE_HEAD_HEIGHT) then
+                        if (dY < -current_pipe_gap - 2 * SPRITE_PIPE_HEAD_HEIGHT or dY >= current_pipe_gap + 2 * SPRITE_PIPE_HEAD_HEIGHT) then
                             x_start := pipe_pos.x - SPRITE_PIPE_BODY_WIDTH;
                             x_end := pipe_pos.x + SPRITE_PIPE_BODY_WIDTH;
 
@@ -296,10 +305,10 @@ begin
                             end if;
                         else
                             -- Get the appropriate delta depending on if we're rendering the upper or lower pipe head
-                            if (dY >= PIPE_GAP_RADIUS) then
-                                dY := dY - PIPE_GAP_RADIUS;
-                            elsif dY < -PIPE_GAP_RADIUS then
-                                dY := SPRITE_PIPE_HEAD_HEIGHT * 2 - (dY + PIPE_GAP_RADIUS + SPRITE_PIPE_HEAD_HEIGHT * 2) - 1;
+                            if (dY >= current_pipe_gap) then
+                                dY := dY - current_pipe_gap;
+                            elsif dY < -current_pipe_gap then
+                                dY := SPRITE_PIPE_HEAD_HEIGHT * 2 - (dY + current_pipe_gap + SPRITE_PIPE_HEAD_HEIGHT * 2) - 1;
                             end if;
 
                             x_start := pipe_pos.x - SPRITE_PIPE_HEAD_WIDTH;
@@ -332,6 +341,7 @@ begin
                         when P_HEALTH => powerup_sprite_offset := SPRITE_POWERUP_HEALTH_OFFSET;
                         when P_SLOW => powerup_sprite_offset := SPRITE_POWERUP_SLOW_OFFSET;
                         when P_GHOST => powerup_sprite_offset := SPRITE_POWERUP_GHOST_OFFSET;
+                        when P_SPRING => powerup_sprite_offset := SPRITE_POWERUP_SPRING_OFFSET;
                     end case;
                     rom_a := std_logic_vector(to_unsigned(powerup_sprite_offset + (dY / 2) * (POWERUP_SIZE / 2) + (dX / 2), ADDRESS_WIDTH));
                     if (dX > 0) then
@@ -385,6 +395,22 @@ begin
 
                     if (dX > 0) then
                         render_a := true;
+                    end if;
+                end if;
+
+                -- Draw the 'paused' icon
+                if paused then
+                    x_start := SCREEN_CENTRE_X - SPRITE_PAUSED_WIDTH;
+                    x_end := SCREEN_CENTRE_X + SPRITE_PAUSED_WIDTH;
+                    y_start := SCREEN_CENTRE_Y - SPRITE_PAUSED_HEIGHT;
+                    y_end := SCREEN_CENTRE_Y + SPRITE_PAUSED_HEIGHT;
+                    if (x >= x_start and x <= x_end and y >= y_start and y < y_end) then
+                        dX := x - x_start;
+                        dY := y - y_start;
+                        rom_a := std_logic_vector(to_unsigned(SPRITE_PAUSED_OFFSET + (dY / 2) * SPRITE_PAUSED_WIDTH + (dX / 2), ADDRESS_WIDTH));
+                        if (dX > 0) then
+                            render_a := true;
+                        end if;
                     end if;
                 end if;
 

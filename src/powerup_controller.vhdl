@@ -20,12 +20,12 @@ entity powerup_controller is
 end entity;
 
 architecture behaviour of powerup_controller is
+    signal next_powerup_type : t_powerup_type;
 begin
     process (clock_60Hz)
         variable powerup_x : integer;
         variable powerup_type : t_powerup_type;
         variable can_spawn_powerup : boolean;
-        variable random : std_logic_vector(1 downto 0);
     begin	 
         if (rising_edge(clock_60Hz)) then
             if (state = S_INIT) then
@@ -41,27 +41,14 @@ begin
                     if (can_spawn_powerup) then     
                         powerup.active <= true;
                         powerup.x <= SCREEN_MAX_X;
-                        powerup.y <= 112 + (rng mod 256);
+                        powerup.y <= 112 + ((rng / 256) mod 256);
 
-                        random := std_logic_vector(to_unsigned((rng mod 5), 2));
+                        powerup_type := next_powerup_type;
 
-                        if (health = 3) then
-                            if ((random and "01") = "00") then
-                                powerup_type := P_SLOW;
-                            else
-                                powerup_type := P_GHOST;
-                            end if;
-                        else
-                            if ((random and "01") = "00") then
-                                powerup_type := P_HEALTH;
-                            else
-                                if ((random and "10") = "10") then
-                                    powerup_type := P_SLOW;
-                                else
-                                    powerup_type := P_GHOST;
-                                end if;
-                            end if;
+                        if (powerup_type = P_HEALTH and health = 3) then
+                            powerup_type := P_SPRING;
                         end if;
+
                         powerup.p_type <= powerup_type;
 
                     end if;
@@ -72,6 +59,10 @@ begin
                     powerup.active <= false;
                 end if;
                 powerup.x <= powerup_x;
+            end if;
+
+            if ((rng / 256) mod 16 = 0) then
+                next_powerup_type <= t_powerup_type'val(rng mod 4);
             end if;
         end if;
     end process;
