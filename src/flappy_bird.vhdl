@@ -61,7 +61,7 @@ architecture behaviour of flappy_bird is
     signal rng : integer range 0 to 65535;
 
     -- restart counter after death
-    signal restart_counter : integer := 0;
+    signal start_counter : integer := 0;
 
     -- difficulty set
     -- level of difficulty: original speed * difficulty
@@ -90,7 +90,8 @@ architecture behaviour of flappy_bird is
             move_pixels : integer;
             training : boolean;
             active_powerup : in t_powerup_type;
-            paused : in boolean
+            paused : in boolean;
+            start_counter : in integer
         );
     end component;
 
@@ -170,6 +171,7 @@ architecture behaviour of flappy_bird is
         health <= 3;
         active_powerup <= P_HEALTH;
         powerup_timer <= 0;
+        start_counter <= 0;
     end procedure;
 
 begin
@@ -200,7 +202,8 @@ begin
         move_pixels => move_pixels_this_frame,
         training => training,
         active_powerup => active_powerup,
-        paused => paused
+        paused => paused,
+        start_counter => start_counter
     );
 
     mouse: mouse_controller port map (
@@ -264,18 +267,22 @@ begin
         variable should_kill_powerup : boolean;
         variable move_pixels_scaled : integer;
         variable powerup_timer_temp : integer;
+        variable start_counter_temp : integer;
     begin
         if (rising_edge(clock_60Hz)) then
             clock_30Hz <= not clock_30Hz;
+
+            start_counter_temp := start_counter;
 
             if (init = '1') then
                 initialise;
             else
                 -- Game start/restart
-                if (left_button = '1' and state = S_INIT) then
+                if (left_button = '1' and state = S_INIT and start_counter = 0) then
                     state <= S_GAME;
-                elsif (left_button = '1' and state = S_DEATH and restart_counter = 0) then
+                elsif (left_button = '1' and state = S_DEATH and start_counter = 0) then
                     initialise;
+                    start_counter_temp := 1;
                 end if;
             end if;
             -- This is done here so that it's vsynced
@@ -309,7 +316,7 @@ begin
             if (state = S_GAME and collision = C_GROUND and active_powerup /= P_GHOST and not training) then
                 health <= 0;
                 state <= S_DEATH;
-                restart_counter <= 30;
+                start_counter_temp := 30;
             elsif (state = S_GAME and health > 0 and not collide_mem) then 
                 -- Collision with pipe
                 if (collision = C_PIPE and active_powerup /= P_GHOST) then
@@ -317,7 +324,7 @@ begin
                     -- enter the death state
                     if (health_temp = 0 and state = S_GAME and not training) then
                         state <= S_DEATH;
-                        restart_counter <= 30;
+                        start_counter_temp := 30;
                     end if;
                     collide_mem <= true;
                     health <= health_temp;
@@ -339,9 +346,11 @@ begin
             kill_powerup <= should_kill_powerup;
 
             -- Decrement the restart counter
-            if (restart_counter > 0) then
-                restart_counter <= restart_counter - 1;
+            if (start_counter > 0) then
+                start_counter_temp := start_counter_temp - 1;
             end if;
+
+            start_counter <= start_counter_temp;
 
             -- Decrement the powerup timer
             if (powerup_timer_temp > 0) then

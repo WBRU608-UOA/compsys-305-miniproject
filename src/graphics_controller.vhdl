@@ -24,7 +24,8 @@ entity graphics_controller is
         move_pixels : in integer;
         training : in boolean;
         active_powerup : in t_powerup_type;
-        paused : in boolean
+        paused : in boolean;
+        start_counter : in integer
     );
 end entity;
 
@@ -402,8 +403,8 @@ begin
                 if paused then
                     x_start := SCREEN_CENTRE_X - SPRITE_PAUSED_WIDTH;
                     x_end := SCREEN_CENTRE_X + SPRITE_PAUSED_WIDTH;
-                    y_start := SCREEN_CENTRE_Y - SPRITE_PAUSED_HEIGHT;
-                    y_end := SCREEN_CENTRE_Y + SPRITE_PAUSED_HEIGHT;
+                    y_start := 86;
+                    y_end := 86 + 2 * SPRITE_PAUSED_HEIGHT;
                     if (x >= x_start and x <= x_end and y >= y_start and y < y_end) then
                         dX := x - x_start;
                         dY := y - y_start;
@@ -419,7 +420,7 @@ begin
                 render_text := false;
                 
                 -- Draw text
-                if (state = S_INIT or state = S_DEATH) then
+                if (start_counter = 0 and (state = S_INIT or state = S_DEATH)) then
                     x_start := SCREEN_CENTRE_X - (screen_centre_string'length * TEXT_CHAR_SIZE) + 2;
                     x_end := SCREEN_CENTRE_X + (screen_centre_string'length * TEXT_CHAR_SIZE);
                     y_start := SCREEN_CENTRE_Y - TEXT_CHAR_SIZE;
