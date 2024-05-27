@@ -34,6 +34,8 @@ package util_pkg is
     constant BIRD_MAX_VEL : integer := 10;
     constant BIRD_IMPULSE_VEL : integer := -8;
 
+    constant DAMAGE_TINT_NUM_FRAMES : integer := 5;
+
     type t_powerup_type is (
         P_HEALTH, P_SLOW, P_GHOST, P_SPRING
     );

@@ -41,19 +41,20 @@ architecture behaviour of flappy_bird is
 
     signal init : std_logic;
 
-    signal paused : boolean;
+    signal paused : boolean := false;
 
     signal score : t_score;
 
     signal day : std_logic;
     signal training : boolean;
 
-    signal collision : t_collision;
+    signal collision : t_collision := C_NONE;
     signal collide_mem : boolean := false;
+    signal damage_tint_frames : integer range 0 to DAMAGE_TINT_NUM_FRAMES := 0;
 
     signal powerup: t_powerup;
     -- Because we can't drive with more than one process
-    signal kill_powerup : boolean;
+    signal kill_powerup : boolean := false;
     signal active_powerup : t_powerup_type := P_HEALTH;
     signal powerup_timer : integer range 0 to 300 := 0;
 
@@ -67,8 +68,8 @@ architecture behaviour of flappy_bird is
     -- level of difficulty: original speed * difficulty
     signal difficulty: integer;
 
-    signal move_pixels_this_frame : integer;
-    signal move_pixels : integer;
+    signal move_pixels_this_frame : integer := 0;
+    signal move_pixels : integer := 0;
 
     component BCD_to_SevenSeg is
         port (BCD_digit : in std_logic_vector(3 downto 0);
@@ -91,7 +92,9 @@ architecture behaviour of flappy_bird is
             training : boolean;
             active_powerup : in t_powerup_type;
             paused : in boolean;
-            start_counter : in integer
+            start_counter : in integer;
+            damage_tint_frames : in integer;
+            powerup_timer : in integer
         );
     end component;
 
@@ -172,6 +175,7 @@ architecture behaviour of flappy_bird is
         active_powerup <= P_HEALTH;
         powerup_timer <= 0;
         start_counter <= 0;
+        damage_tint_frames <= 0;
     end procedure;
 
 begin
@@ -203,7 +207,9 @@ begin
         training => training,
         active_powerup => active_powerup,
         paused => paused,
-        start_counter => start_counter
+        start_counter => start_counter,
+        damage_tint_frames => damage_tint_frames,
+        powerup_timer => powerup_timer
     );
 
     mouse: mouse_controller port map (
@@ -268,6 +274,7 @@ begin
         variable move_pixels_scaled : integer;
         variable powerup_timer_temp : integer;
         variable start_counter_temp : integer;
+        variable damage_tint_frames_temp : integer;
     begin
         if (rising_edge(clock_60Hz)) then
             clock_30Hz <= not clock_30Hz;
@@ -282,7 +289,7 @@ begin
                     state <= S_GAME;
                 elsif (left_button = '1' and state = S_DEATH and start_counter = 0) then
                     initialise;
-                    start_counter_temp := 1;
+                    start_counter_temp := 2;
                 end if;
             end if;
             -- This is done here so that it's vsynced
@@ -311,16 +318,20 @@ begin
             should_kill_powerup := false;
             powerup_timer_temp := powerup_timer;
 
+            damage_tint_frames_temp := damage_tint_frames;
+
             -- Handle collisions
             -- Collision with the ground
             if (state = S_GAME and collision = C_GROUND and active_powerup /= P_GHOST and not training) then
                 health <= 0;
                 state <= S_DEATH;
                 start_counter_temp := 30;
+                damage_tint_frames_temp := DAMAGE_TINT_NUM_FRAMES;
             elsif (state = S_GAME and health > 0 and not collide_mem) then 
                 -- Collision with pipe
                 if (collision = C_PIPE and active_powerup /= P_GHOST) then
                     health_temp := health - 1;
+                    damage_tint_frames_temp := DAMAGE_TINT_NUM_FRAMES;
                     -- enter the death state
                     if (health_temp = 0 and state = S_GAME and not training) then
                         state <= S_DEATH;
@@ -330,9 +341,9 @@ begin
                     health <= health_temp;
                 -- Collision with powerup
                 elsif (collision = C_POWERUP) then
-                    active_powerup <= powerup.p_type;
                     should_kill_powerup := true;
                     if (powerup.p_type /= P_HEALTH) then
+                        active_powerup <= powerup.p_type;
                         powerup_timer_temp := 300;
                     elsif (powerup.p_type = P_HEALTH and health < 3 and not kill_powerup) then
                         health <= health + 1;
@@ -342,11 +353,18 @@ begin
             elsif (collision = C_NONE and collide_mem and state /= S_DEATH) then
                 collide_mem <= false;
             end if;
-            
+
             kill_powerup <= should_kill_powerup;
 
+            -- Decrement damage tint frames counter
+            if (damage_tint_frames_temp > 0) then
+                damage_tint_frames_temp := damage_tint_frames_temp - 1;
+            end if;
+
+            damage_tint_frames <= damage_tint_frames_temp;
+            
             -- Decrement the restart counter
-            if (start_counter > 0) then
+            if (start_counter_temp > 0) then
                 start_counter_temp := start_counter_temp - 1;
             end if;
 
@@ -354,7 +372,7 @@ begin
 
             -- Decrement the powerup timer
             if (powerup_timer_temp > 0) then
-                powerup_timer_temp := powerup_timer - 1;
+                powerup_timer_temp := powerup_timer_temp - 1;
             elsif (powerup_timer = 0) then
                 -- P_HEALTH has no effect as an active powerup
                 active_powerup <= P_HEALTH;

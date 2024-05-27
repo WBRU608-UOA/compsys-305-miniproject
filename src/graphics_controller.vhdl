@@ -25,7 +25,9 @@ entity graphics_controller is
         training : in boolean;
         active_powerup : in t_powerup_type;
         paused : in boolean;
-        start_counter : in integer
+        start_counter : in integer;
+        damage_tint_frames : in integer;
+        powerup_timer : in integer
     );
 end entity;
 
@@ -400,7 +402,7 @@ begin
                 end if;
 
                 -- Draw the 'paused' icon
-                if paused then
+                if (paused) then
                     x_start := SCREEN_CENTRE_X - SPRITE_PAUSED_WIDTH;
                     x_end := SCREEN_CENTRE_X + SPRITE_PAUSED_WIDTH;
                     y_start := 86;
@@ -415,11 +417,34 @@ begin
                     end if;
                 end if;
 
+                -- Draw the active powerup
+                -- If the powerup timer has less than a second remaining, we flash it
+                if (active_powerup /= P_HEALTH and (powerup_timer > 60 or (powerup_timer mod 8 < 4))) then
+                    x_start := 25;
+                    x_end := 25 + POWERUP_SIZE;
+                    y_start := 65;
+                    y_end := 65 + POWERUP_SIZE;
+                    if (x >= x_start and x <= x_end and y >= y_start and y < y_end) then
+                        dX := x - x_start;
+                        dY := y - y_start;
+                        case active_powerup is
+                            when P_HEALTH => powerup_sprite_offset := SPRITE_POWERUP_HEALTH_OFFSET;
+                            when P_SLOW => powerup_sprite_offset := SPRITE_POWERUP_SLOW_OFFSET;
+                            when P_GHOST => powerup_sprite_offset := SPRITE_POWERUP_GHOST_OFFSET;
+                            when P_SPRING => powerup_sprite_offset := SPRITE_POWERUP_SPRING_OFFSET;
+                        end case;
+                        rom_a := std_logic_vector(to_unsigned(powerup_sprite_offset + (dY / 2) * (POWERUP_SIZE / 2) + (dX / 2), ADDRESS_WIDTH));
+                        if (dX > 0) then
+                            render_a := true;
+                        end if;
+                    end if;
+                end if;
+
                 -- TEXT LAYER
 
                 render_text := false;
                 
-                -- Draw text
+                -- Draw the "Click to Start" or "Click to Restart" text
                 if (start_counter = 0 and (state = S_INIT or state = S_DEATH)) then
                     x_start := SCREEN_CENTRE_X - (screen_centre_string'length * TEXT_CHAR_SIZE) + 2;
                     x_end := SCREEN_CENTRE_X + (screen_centre_string'length * TEXT_CHAR_SIZE);
@@ -472,6 +497,7 @@ begin
                     char_row <= std_logic_vector(to_unsigned(dY, 3));
                     char_col <= std_logic_vector(to_unsigned(dX, 3));
 
+                    -- FIgure out if this heart should be full or empty
                     if (place < health) then
                         char_addr <= std_logic_vector(to_unsigned(16, 7));
                         text_colour <= x"f00";
@@ -501,6 +527,14 @@ begin
                     current_pixel_computed := text_colour;
                 end if;
 
+                -- If there are damage tint frames, tint the pixel red
+                -- This is the only code that uses a DSP block!
+                if (damage_tint_frames > 0) then
+                    current_pixel_computed(11 downto 8) := current_pixel_computed(11 downto 8) or "1000";
+                    current_pixel_computed(7 downto 4) := '0' & current_pixel_computed(7 downto 5);
+                    current_pixel_computed(3 downto 0) := '0' & current_pixel_computed(3 downto 1);
+                end if;
+
                 -- The aforementioned black leftmost column (would be garbage pixels otherwise)
                 if (x = 0) then
                     current_pixel <= x"000";
@@ -526,6 +560,7 @@ begin
         variable move_pixels_temp : integer;
     begin
         if (rising_edge(clock_60Hz) and STATE = S_GAME ) then
+            -- Divide the pixels to move this frame by 2 for the background
             move_pixels_temp := (move_pixels / 2);
             if (move_pixels_temp = 0) then
                 move_pixels_temp := 1;
@@ -552,8 +587,7 @@ begin
             if (counter_temp >= 60) then
                 counter_temp := 0;
             end if;
-            counter_60Hz
-     <= counter_temp;
+            counter_60Hz <= counter_temp;
         end if;
     end process;
 
