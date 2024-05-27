@@ -325,7 +325,8 @@ begin
             if (state = S_GAME and collision = C_GROUND and active_powerup /= P_GHOST and not training) then
                 health <= 0;
                 state <= S_DEATH;
-                start_counter_temp := 30;
+                -- set the start timer counter to 2s and make the bird fall to the ground before start, not re-start in the air.
+                start_counter_temp := 60;
                 damage_tint_frames_temp := DAMAGE_TINT_NUM_FRAMES;
             elsif (state = S_GAME and (health > 0 or training) and not collide_mem) then 
                 -- Collision with pipe
@@ -335,7 +336,7 @@ begin
                         -- Player dies if health reaches 0
                         if (health_temp = 0 and state = S_GAME) then
                             state <= S_DEATH;
-                            start_counter_temp := 30;
+                            start_counter_temp := 60;
                         end if;
                         health <= health_temp;
                     end if;
