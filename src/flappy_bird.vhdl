@@ -66,7 +66,7 @@ architecture behaviour of flappy_bird is
 
     -- difficulty set
     -- level of difficulty: original speed * difficulty
-    signal difficulty: integer;
+    signal difficulty: integer range 1 to 9;
 
     signal move_pixels_this_frame : integer := 0;
     signal move_pixels : integer := 0;
@@ -327,10 +327,10 @@ begin
                 state <= S_DEATH;
                 start_counter_temp := 60;
                 damage_frames_temp := DAMAGE_NUM_FRAMES;
-            -- Player shouldn't take damage if they have damage frames
-            elsif (state = S_GAME and (health > 0 or training) and not collide_mem and damage_frames = 0) then 
+            elsif (state = S_GAME and (health > 0 or training) and not collide_mem) then 
                 -- Collision with pipe
-                if (collision = C_PIPE and active_powerup /= P_GHOST) then
+                -- Player shouldn't take damage if they have damage frames
+                if (collision = C_PIPE and active_powerup /= P_GHOST and damage_frames = 0) then
                     if (not training) then
                         health_temp := health - 1;
                         -- Player dies if health reaches 0

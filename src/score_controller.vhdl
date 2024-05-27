@@ -46,6 +46,7 @@ begin
         variable new_pipe_x : integer;
         variable pipe_pos : t_pipe_pos;
         variable score_temp : natural;
+        variable difficulty_temp : natural;
     begin
         if (state = S_INIT) then
             score <= (others => 0);
@@ -58,7 +59,11 @@ begin
                 old_pipes(i) <= pipes(i);
             end loop;
             -- each difficulty should be 10 scores a level (at least level 1)
-            difficulty <= score(2) * 10 + score(1) + 1;
+            difficulty_temp := score(2) * 10 + score(1) + 1;
+            if (difficulty_temp > 9) then
+                difficulty_temp := 9;
+            end if;
+            difficulty <= difficulty_temp;
         end if;
     end process;
 
