@@ -327,18 +327,20 @@ begin
                 state <= S_DEATH;
                 start_counter_temp := 30;
                 damage_tint_frames_temp := DAMAGE_TINT_NUM_FRAMES;
-            elsif (state = S_GAME and health > 0 and not collide_mem) then 
+            elsif (state = S_GAME and (health > 0 or training) and not collide_mem) then 
                 -- Collision with pipe
                 if (collision = C_PIPE and active_powerup /= P_GHOST) then
-                    health_temp := health - 1;
-                    damage_tint_frames_temp := DAMAGE_TINT_NUM_FRAMES;
-                    -- enter the death state
-                    if (health_temp = 0 and state = S_GAME and not training) then
-                        state <= S_DEATH;
-                        start_counter_temp := 30;
+                    if (not training) then
+                        health_temp := health - 1;
+                        -- Player dies if health reaches 0
+                        if (health_temp = 0 and state = S_GAME) then
+                            state <= S_DEATH;
+                            start_counter_temp := 30;
+                        end if;
+                        health <= health_temp;
                     end if;
                     collide_mem <= true;
-                    health <= health_temp;
+                    damage_tint_frames_temp := DAMAGE_TINT_NUM_FRAMES;
                 -- Collision with powerup
                 elsif (collision = C_POWERUP) then
                     should_kill_powerup := true;
@@ -347,6 +349,8 @@ begin
                         powerup_timer_temp := 300;
                     elsif (powerup.p_type = P_HEALTH and health < 3 and not kill_powerup) then
                         health <= health + 1;
+                        -- Set the timer to a small value so that the health
+                        -- isn't applied more than once before it's set to inactive
                         powerup_timer_temp := 30;
                     end if;
                 end if;

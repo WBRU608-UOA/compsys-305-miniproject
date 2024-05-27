@@ -25,6 +25,7 @@ begin
         variable current_pipe_gap : integer;
     begin
         if (rising_edge(clock_60Hz)) then
+            -- Widen the pipe gap if the player has the spring powerup
             collision_temp := C_NONE;
             if (active_powerup = P_SPRING) then
                 current_pipe_gap := PIPE_GAP_RADIUS + 10;
@@ -32,6 +33,7 @@ begin
                 current_pipe_gap := PIPE_GAP_RADIUS;
             end if;
 
+            -- Pipe collisions
             for i in 0 to 2 loop
                 if (
                     bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > pipe_posns(i).x - PIPE_WIDTH / 2 
@@ -58,6 +60,7 @@ begin
                     collision_temp := C_POWERUP;
                 end if;
             end if;
+            
             collision <= collision_temp;
         end if;
     end process;

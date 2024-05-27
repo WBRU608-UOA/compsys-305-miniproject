@@ -31,7 +31,9 @@ begin
             if (state = S_INIT) then
                 powerup.active <= false;
             elsif (state = S_GAME and not powerup.active) then
+                -- Try to spawn the powerup every ~128 frames if it's not active
                 if (rng mod 128 = 0) then
+                    -- Only spawn it if there's not a pipe close to the spawn position
                     can_spawn_powerup := true;
                     for i in 0 to 2 loop
                         if (pipe_posns(i).x > 600 or pipe_posns(i).x < -10) then
@@ -45,6 +47,7 @@ begin
 
                         powerup_type := next_powerup_type;
 
+                        -- If the player's at max health spawn a spring instead of a health powerup
                         if (powerup_type = P_HEALTH and health = 3) then
                             powerup_type := P_SPRING;
                         end if;
@@ -61,6 +64,7 @@ begin
                 powerup.x <= powerup_x;
             end if;
 
+            -- We do this to decouple the type from the position
             if ((rng / 256) mod 16 = 0) then
                 next_powerup_type <= t_powerup_type'val(rng mod 4);
             end if;

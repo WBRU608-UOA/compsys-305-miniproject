@@ -497,7 +497,7 @@ begin
                     char_row <= std_logic_vector(to_unsigned(dY, 3));
                     char_col <= std_logic_vector(to_unsigned(dX, 3));
 
-                    -- FIgure out if this heart should be full or empty
+                    -- Figure out if this heart should be full or empty
                     if (place < health) then
                         char_addr <= std_logic_vector(to_unsigned(16, 7));
                         text_colour <= x"f00";
@@ -527,8 +527,7 @@ begin
                     current_pixel_computed := text_colour;
                 end if;
 
-                -- If there are damage tint frames, tint the pixel red
-                -- This is the only code that uses a DSP block!
+                -- If there are damage tint frames, tint the pixel red by ORing the red channel with 8 and halving the other channels
                 if (damage_tint_frames > 0) then
                     current_pixel_computed(11 downto 8) := current_pixel_computed(11 downto 8) or "1000";
                     current_pixel_computed(7 downto 4) := '0' & current_pixel_computed(7 downto 5);
