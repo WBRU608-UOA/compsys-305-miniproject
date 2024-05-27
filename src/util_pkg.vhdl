@@ -17,6 +17,8 @@ package util_pkg is
 
     constant PIPE_GAP_RADIUS : integer := 70;
 
+    constant POWERUP_SPRING_VALUE : integer := 15;
+
     constant POWERUP_SIZE : integer := 24;
 
     -- Allows for a fairly large range of positions whilst minimising ALM usage
@@ -34,7 +36,7 @@ package util_pkg is
     constant BIRD_MAX_VEL : integer := 10;
     constant BIRD_IMPULSE_VEL : integer := -8;
 
-    constant DAMAGE_TINT_NUM_FRAMES : integer := 5;
+    constant DAMAGE_NUM_FRAMES : integer := 12;
 
     type t_powerup_type is (
         P_HEALTH, P_SLOW, P_GHOST, P_SPRING

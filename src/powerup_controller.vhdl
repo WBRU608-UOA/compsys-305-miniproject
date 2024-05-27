@@ -43,13 +43,13 @@ begin
                     if (can_spawn_powerup) then     
                         powerup.active <= true;
                         powerup.x <= SCREEN_MAX_X;
-                        powerup.y <= 112 + ((rng / 256) mod 256);
+                        powerup.y <= 112 + ((rng / 128) mod 256);
 
                         powerup_type := next_powerup_type;
 
-                        -- If the player's at max health spawn a spring instead of a health powerup
+                        -- If the player's at max health don't spawn a health powerup
                         if (powerup_type = P_HEALTH and health = 3) then
-                            powerup_type := P_SPRING;
+                            powerup_type := t_powerup_type'val(2 + ((rng / 128) mod 2));
                         end if;
 
                         powerup.p_type <= powerup_type;
@@ -65,7 +65,7 @@ begin
             end if;
 
             -- We do this to decouple the type from the position
-            if ((rng / 256) mod 16 = 0) then
+            if ((rng / 128) mod 16 = 0) then
                 next_powerup_type <= t_powerup_type'val(rng mod 4);
             end if;
         end if;

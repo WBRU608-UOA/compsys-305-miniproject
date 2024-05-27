@@ -25,10 +25,23 @@ begin
         variable current_pipe_gap : integer;
     begin
         if (rising_edge(clock_60Hz)) then
-            -- Widen the pipe gap if the player has the spring powerup
             collision_temp := C_NONE;
+
+            -- Powerup collision check
+            if (powerup.active) then
+                if (
+                    bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > powerup.x 
+                    and bird_pos.x < powerup.x + (POWERUP_SIZE)
+                    and bird_pos.y + (SPRITE_BIRD_HEIGHT * 2) >= powerup.y
+                    and bird_pos.y < powerup.y + POWERUP_SIZE
+                ) then 
+                    collision_temp := C_POWERUP;
+                end if;
+            end if;
+
+            -- Widen the pipe gap if the player has the spring powerup
             if (active_powerup = P_SPRING) then
-                current_pipe_gap := PIPE_GAP_RADIUS + 10;
+                current_pipe_gap := PIPE_GAP_RADIUS + POWERUP_SPRING_VALUE;
             else
                 current_pipe_gap := PIPE_GAP_RADIUS;
             end if;
@@ -47,18 +60,6 @@ begin
             -- Ground collisions come after as they take priority
             if (bird_pos.y + 2 * SPRITE_BIRD_HEIGHT >= GROUND_START_Y) then
                 collision_temp := C_GROUND;
-            end if;
-
-            -- Powerup collision check
-            if (collision_temp = C_NONE and powerup.active) then
-                if (
-                    bird_pos.x + (SPRITE_BIRD_WIDTH * 2) > powerup.x 
-                    and bird_pos.x < powerup.x + (POWERUP_SIZE)
-                    and bird_pos.y + (SPRITE_BIRD_HEIGHT * 2) >= powerup.y
-                    and bird_pos.y < powerup.y + POWERUP_SIZE
-                ) then 
-                    collision_temp := C_POWERUP;
-                end if;
             end if;
             
             collision <= collision_temp;

@@ -50,7 +50,7 @@ architecture behaviour of flappy_bird is
 
     signal collision : t_collision := C_NONE;
     signal collide_mem : boolean := false;
-    signal damage_tint_frames : integer range 0 to DAMAGE_TINT_NUM_FRAMES := 0;
+    signal damage_frames : integer range 0 to DAMAGE_NUM_FRAMES := 0;
 
     signal powerup: t_powerup;
     -- Because we can't drive with more than one process
@@ -93,7 +93,7 @@ architecture behaviour of flappy_bird is
             active_powerup : in t_powerup_type;
             paused : in boolean;
             start_counter : in integer;
-            damage_tint_frames : in integer;
+            damage_frames : in integer;
             powerup_timer : in integer
         );
     end component;
@@ -175,7 +175,7 @@ architecture behaviour of flappy_bird is
         active_powerup <= P_HEALTH;
         powerup_timer <= 0;
         start_counter <= 0;
-        damage_tint_frames <= 0;
+        damage_frames <= 0;
     end procedure;
 
 begin
@@ -208,7 +208,7 @@ begin
         active_powerup => active_powerup,
         paused => paused,
         start_counter => start_counter,
-        damage_tint_frames => damage_tint_frames,
+        damage_frames => damage_frames,
         powerup_timer => powerup_timer
     );
 
@@ -274,7 +274,7 @@ begin
         variable move_pixels_scaled : integer;
         variable powerup_timer_temp : integer;
         variable start_counter_temp : integer;
-        variable damage_tint_frames_temp : integer;
+        variable damage_frames_temp : integer;
     begin
         if (rising_edge(clock_60Hz)) then
             clock_30Hz <= not clock_30Hz;
@@ -318,16 +318,17 @@ begin
             should_kill_powerup := false;
             powerup_timer_temp := powerup_timer;
 
-            damage_tint_frames_temp := damage_tint_frames;
+            damage_frames_temp := damage_frames;
 
             -- Handle collisions
-            -- Collision with the ground
+            -- Collision with the ground ignores collision memory, as it should be an insta-death
             if (state = S_GAME and collision = C_GROUND and active_powerup /= P_GHOST and not training) then
                 health <= 0;
                 state <= S_DEATH;
                 start_counter_temp := 30;
-                damage_tint_frames_temp := DAMAGE_TINT_NUM_FRAMES;
-            elsif (state = S_GAME and (health > 0 or training) and not collide_mem) then 
+                damage_frames_temp := DAMAGE_NUM_FRAMES;
+            -- Player shouldn't take damage if they have damage frames
+            elsif (state = S_GAME and (health > 0 or training) and not collide_mem and damage_frames = 0) then 
                 -- Collision with pipe
                 if (collision = C_PIPE and active_powerup /= P_GHOST) then
                     if (not training) then
@@ -340,11 +341,12 @@ begin
                         health <= health_temp;
                     end if;
                     collide_mem <= true;
-                    damage_tint_frames_temp := DAMAGE_TINT_NUM_FRAMES;
+                    damage_frames_temp := DAMAGE_NUM_FRAMES;
                 -- Collision with powerup
                 elsif (collision = C_POWERUP) then
                     should_kill_powerup := true;
                     if (powerup.p_type /= P_HEALTH) then
+                        -- We do this here because we don't want health overriding an active powerup
                         active_powerup <= powerup.p_type;
                         powerup_timer_temp := 300;
                     elsif (powerup.p_type = P_HEALTH and health < 3 and not kill_powerup) then
@@ -361,11 +363,11 @@ begin
             kill_powerup <= should_kill_powerup;
 
             -- Decrement damage tint frames counter
-            if (damage_tint_frames_temp > 0) then
-                damage_tint_frames_temp := damage_tint_frames_temp - 1;
+            if (damage_frames_temp > 0) then
+                damage_frames_temp := damage_frames_temp - 1;
             end if;
 
-            damage_tint_frames <= damage_tint_frames_temp;
+            damage_frames <= damage_frames_temp;
             
             -- Decrement the restart counter
             if (start_counter_temp > 0) then

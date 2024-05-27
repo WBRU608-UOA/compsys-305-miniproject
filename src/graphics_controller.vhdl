@@ -26,7 +26,7 @@ entity graphics_controller is
         active_powerup : in t_powerup_type;
         paused : in boolean;
         start_counter : in integer;
-        damage_tint_frames : in integer;
+        damage_frames : in integer;
         powerup_timer : in integer
     );
 end entity;
@@ -229,14 +229,30 @@ begin
                 if (active_powerup = P_GHOST) then
                     bird_sprite_offset := SPRITE_BIRD_GHOST_OFFSET;
                 elsif ((counter_60Hz mod 32) < 11) then
-                    bird_sprite_offset := SPRITE_BIRD_3_OFFSET;
+                    if (damage_frames > 0) then
+                        bird_sprite_offset := SPRITE_BIRD_TINT_3_OFFSET;
+                    else
+                        bird_sprite_offset := SPRITE_BIRD_3_OFFSET;
+                    end if;
                 elsif ((counter_60Hz mod 32) < 21) then
-                    bird_sprite_offset := SPRITE_BIRD_2_OFFSET;
+                    if (damage_frames > 0) then
+                        bird_sprite_offset := SPRITE_BIRD_TINT_2_OFFSET;
+                    else
+                        bird_sprite_offset := SPRITE_BIRD_2_OFFSET;
+                    end if;
                 else
-                    bird_sprite_offset := SPRITE_BIRD_OFFSET;
+                    if (damage_frames > 0) then
+                        bird_sprite_offset := SPRITE_BIRD_TINT_OFFSET;
+                    else
+                        bird_sprite_offset := SPRITE_BIRD_OFFSET;
+                    end if;
                 end if;
             else
-                bird_sprite_offset := SPRITE_BIRD_2_OFFSET;
+                if (damage_frames > 0) then
+                    bird_sprite_offset := SPRITE_BIRD_TINT_2_OFFSET;
+                else
+                    bird_sprite_offset := SPRITE_BIRD_2_OFFSET;
+                end if;
             end if;
 
             -- For all draw ops involving sprites, the address is set when the 25MHz clock is high and the data is read when it is low.
@@ -278,7 +294,7 @@ begin
                 end if;
 
                 if (active_powerup = P_SPRING) then
-                    current_pipe_gap := PIPE_GAP_RADIUS + 10;
+                    current_pipe_gap := PIPE_GAP_RADIUS + POWERUP_SPRING_VALUE;
                 else
                     current_pipe_gap := PIPE_GAP_RADIUS;
                 end if;
@@ -525,13 +541,6 @@ begin
                 -- Render the text layer at the front
                 if (render_layer_text and char_bit = '1') then
                     current_pixel_computed := text_colour;
-                end if;
-
-                -- If there are damage tint frames, tint the pixel red by ORing the red channel with 8 and halving the other channels
-                if (damage_tint_frames > 0) then
-                    current_pixel_computed(11 downto 8) := current_pixel_computed(11 downto 8) or "1000";
-                    current_pixel_computed(7 downto 4) := '0' & current_pixel_computed(7 downto 5);
-                    current_pixel_computed(3 downto 0) := '0' & current_pixel_computed(3 downto 1);
                 end if;
 
                 -- The aforementioned black leftmost column (would be garbage pixels otherwise)
